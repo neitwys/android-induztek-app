@@ -1,6 +1,8 @@
 package com.induztek.app.ui.components
 
 import androidx.annotation.DrawableRes
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardOptions
@@ -59,13 +61,28 @@ fun CampoTexto(
 @Composable
 private fun CampoTextoPreview() {
     InduztekAppTheme {
-        CampoTexto(
-            valor = "Jose Castro",
-            onValorCambia = {},
-            etiqueta = "Nombre completo",
-            icono = R.drawable.ic_person,
-            error = "Ingresa un nombre válido",
-            modifier = Modifier.padding(16.dp)
-        )
+        Column(
+            modifier = Modifier.padding(Dimens.espacioMedio)
+        ) {
+            CampoTexto(
+                valor = "Jose Cas342",
+                onValorCambia = {},
+                etiqueta = "Nombre completo",
+                icono = R.drawable.ic_person,
+                error = "Ingresa un nombre válido",
+                modifier = Modifier.padding(16.dp)
+            )
+
+            Spacer(modifier = Modifier.padding(Dimens.espacioMini))
+
+            CampoTexto(
+                valor = "Jose Castro",
+                onValorCambia = {},
+                etiqueta = "Nombre completo",
+                icono = R.drawable.ic_person,
+                modifier = Modifier.padding(16.dp)
+            )
+        }
     }
+
 }
