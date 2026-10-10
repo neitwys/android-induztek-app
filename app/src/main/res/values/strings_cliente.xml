@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="cliente_titulo_pantalla">Registro de Cliente e Instalación</string>
+
+    <!-- Datos del Cliente -->
+    <string name="cliente_seccion_datos">Datos del Cliente</string>
+    <string name="cliente_campo_razon_social">Razón Social</string>
+    <string name="cliente_campo_rut">RUT Empresa (ej: 76.123.456-k)</string>
+    <string name="cliente_campo_giro">Giro (ej: Minería, Industrial)</string>
+    <string name="cliente_campo_contacto">Nombre de Contacto</string>
+    <string name="cliente_campo_telefono">Teléfono</string>
+    <string name="cliente_campo_correo">Correo Electrónico</string>
+
+    <!-- Datos de la instalación -->
+    <string name="cliente_seccion_instalacion">Datos de la Instalación</string>
+    <string name="cliente_campo_nombre_instalacion">Nombre de Instalación (ej: Planta Lampa)</string>
+    <string name="cliente_campo_ubicacion">Ubicación / Dirección</string>
+    <string name="cliente_campo_comuna">Comuna</string>
+    <string name="cliente_campo_region">Región</string>
+    <string name="cliente_campo_observaciones">Observaciones de Acceso</string>
+
+    <!-- Botones y mensajes -->
+    <string name="cliente_btn_limpiar">Limpiar</string>
+    <string name="cliente_btn_registrar">Registrar</string>
+    <string name="cliente_msg_exito">¡Cliente %1$s e instalación registrados con éxito!</string>
+</resources>
