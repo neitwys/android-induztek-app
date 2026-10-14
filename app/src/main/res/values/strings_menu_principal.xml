@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Menú principal -->
+    <string name="menu_titulo_pantalla">Panel Principal - Induztek</string>
+    <string name="menu_seccion_modulos">Módulos del Sistema</string>
+    <string name="menu_card_clientes_titulo">Clientes e Instalaciones</string>
+    <string name="menu_card_clientes_desc">Registrar y gestionar clientes y sus plantas</string>
+    <string name="menu_btn_ingresar">Ingresar</string>
+</resources>

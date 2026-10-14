@@ -41,6 +41,32 @@ import com.induztek.app.ui.theme.Exito
 import com.induztek.app.ui.theme.ExitoFondo
 import com.induztek.app.viewmodel.RegistroClienteViewModel
 
+
+// 3. Constructor
+@Composable
+fun RegistroClienteScreen(
+    viewModel: RegistroClienteViewModel = viewModel()
+) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    RegistroClienteContent(
+        uiState = uiState,
+        onRazonSocialCambia = viewModel::onRazonSocialCambia,
+        onRutCambia = viewModel::onRutCambia,
+        onGiroCambia = viewModel::onGiroCambia,
+        onContactoCambia = viewModel::onContactoCambia,
+        onTelefonoCambia = viewModel::onTelefonoCambia,
+        onCorreoCambia = viewModel::onCorreoCambia,
+        onNombreInstalacionCambia = viewModel::onNombreInstalacionCambia,
+        onUbicacionCambia = viewModel::onUbicacionCambia,
+        onComunaCambia = viewModel::onComunaCambia,
+        onRegionCambia = viewModel::onRegionCambia,
+        onObservacionesAccesoCambia = viewModel::onObservacionesAccesoCambia,
+        onLimpiar = viewModel::onLimpiar,
+        onRegistrar = viewModel::onRegistrar
+    )
+}
+
 // 1. Contenido
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -238,32 +264,6 @@ private fun MensajeExitoRegistro(nombre: String) {
         }
     }
 }
-
-// 3. Constructor
-@Composable
-fun RegistroClienteScreen(
-    viewModel: RegistroClienteViewModel = viewModel()
-) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-
-    RegistroClienteContent(
-        uiState = uiState,
-        onRazonSocialCambia = viewModel::onRazonSocialCambia,
-        onRutCambia = viewModel::onRutCambia,
-        onGiroCambia = viewModel::onGiroCambia,
-        onContactoCambia = viewModel::onContactoCambia,
-        onTelefonoCambia = viewModel::onTelefonoCambia,
-        onCorreoCambia = viewModel::onCorreoCambia,
-        onNombreInstalacionCambia = viewModel::onNombreInstalacionCambia,
-        onUbicacionCambia = viewModel::onUbicacionCambia,
-        onComunaCambia = viewModel::onComunaCambia,
-        onRegionCambia = viewModel::onRegionCambia,
-        onObservacionesAccesoCambia = viewModel::onObservacionesAccesoCambia,
-        onLimpiar = viewModel::onLimpiar,
-        onRegistrar = viewModel::onRegistrar
-    )
-}
-
 
 // 2. Preview
 @Preview(showBackground = true, showSystemUi = true)
