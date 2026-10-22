@@ -9,6 +9,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.induztek.app.model.Usuario
+import com.induztek.app.screens.ClientesScreen
 import com.induztek.app.screens.LoginScreen
 import com.induztek.app.screens.MenuPrincipalScreen
 import com.induztek.app.screens.RegistroClienteScreen
@@ -40,13 +41,37 @@ fun AppNavegacion() {
                 usuario = usuarioActual,
                 onNavegarRegistroCliente = {
                     navController.navigate(Ruta.RegistroCliente.ruta)
+                },
+                onNavegarListaClientes = {
+                    navController.navigate(Ruta.Clientes.ruta)
+                },
+
+                //Funcion para cuando le den a cerrar sesion.
+                onCerrarSesion = {
+                    val sesionPrefs = com.induztek.app.data.SesionPreferencias(navController.context)
+                    sesionPrefs.borrar()
+
+                    usuarioActual = null
+
+                    navController.navigate(Ruta.Login.ruta) {
+                        popUpTo(Ruta.MenuPrincipal.ruta) { inclusive = true }
+                    }
                 }
             )
+
         }
 
         // 2. Ruta del Formulario de Registro Clientes.
         composable(Ruta.RegistroCliente.ruta) {
-            RegistroClienteScreen()
+            RegistroClienteScreen(
+                onVolver = { navController.popBackStack() }
+            )
+        }
+
+        composable(Ruta.Clientes.ruta) {
+            ClientesScreen(
+                onVolver = { navController.popBackStack() }
+            )
         }
     }
 }

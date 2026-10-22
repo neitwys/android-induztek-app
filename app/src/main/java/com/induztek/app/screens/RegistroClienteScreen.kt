@@ -45,7 +45,8 @@ import com.induztek.app.viewmodel.RegistroClienteViewModel
 // 3. Constructor
 @Composable
 fun RegistroClienteScreen(
-    viewModel: RegistroClienteViewModel = viewModel()
+    viewModel: RegistroClienteViewModel = viewModel(),
+    onVolver: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -63,7 +64,8 @@ fun RegistroClienteScreen(
         onRegionCambia = viewModel::onRegionCambia,
         onObservacionesAccesoCambia = viewModel::onObservacionesAccesoCambia,
         onLimpiar = viewModel::onLimpiar,
-        onRegistrar = viewModel::onRegistrar
+        onRegistrar = viewModel::onRegistrar,
+        onVolver = onVolver
     )
 }
 
@@ -84,12 +86,22 @@ fun RegistroClienteContent(
     onRegionCambia: (String) -> Unit,
     onObservacionesAccesoCambia: (String) -> Unit,
     onLimpiar: () -> Unit,
-    onRegistrar: () -> Unit
+    onRegistrar: () -> Unit,
+    onVolver: () -> Unit
 ) {
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.cliente_titulo_pantalla)) },
+                navigationIcon = {
+                    androidx.compose.material3.IconButton(onClick = onVolver) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_volver), // Asegúrate de tener tu ícono de volver
+                            contentDescription = "Volver",
+                            tint = MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     titleContentColor =MaterialTheme.colorScheme.onPrimary
@@ -257,7 +269,7 @@ private fun MensajeExitoRegistro(nombre: String) {
                 modifier = Modifier.size(Dimens.tamanoIcono)
             )
             Text(
-                text = stringResource(R.string.cliente_msg_exito),
+                text = stringResource(R.string.cliente_msg_exito, nombre),
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(start = Dimens.espacioChico)
             )
@@ -297,6 +309,7 @@ fun RegistroClienteContentPreview() {
         onRegionCambia = {},
         onObservacionesAccesoCambia = {},
         onLimpiar = {},
-        onRegistrar = {}
+        onRegistrar = {},
+        onVolver = {}
     )
 }

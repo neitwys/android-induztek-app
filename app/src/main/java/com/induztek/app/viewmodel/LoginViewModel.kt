@@ -3,7 +3,7 @@ package com.induztek.app.viewmodel
 import android.app.Application
 import android.util.Patterns
 import androidx.lifecycle.AndroidViewModel
-import com.induztek.app.data.UsuarioDbHelper
+import com.induztek.app.data.InduztekDbHelper
 import com.induztek.app.model.LoginUiState
 import com.induztek.app.model.Usuario
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,7 +14,7 @@ import kotlinx.coroutines.flow.update
 //Cambiamos a AndroidViewModel, porque los DB y los Preferences (en data) necesitan de un Context.
 //AndroidViewModel lo tiene, el ViewModel por defecto no.
 class LoginViewModel(application: Application): AndroidViewModel(application) {
-    private val dbHelper = UsuarioDbHelper(application)
+    private val dbHelper = InduztekDbHelper(application)
 
     private val _uiState = MutableStateFlow(LoginUiState())
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
