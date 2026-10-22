@@ -1,16 +1,21 @@
 package com.induztek.app.viewmodel
 
+import android.app.Application
 import android.util.Patterns
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
+import com.induztek.app.data.UsuarioDbHelper
 import com.induztek.app.model.LoginUiState
-import com.induztek.app.model.RolUsuario
 import com.induztek.app.model.Usuario
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
-class LoginViewModel: ViewModel() {
+//Cambiamos a AndroidViewModel, porque los DB y los Preferences (en data) necesitan de un Context.
+//AndroidViewModel lo tiene, el ViewModel por defecto no.
+class LoginViewModel(application: Application): AndroidViewModel(application) {
+    private val dbHelper = UsuarioDbHelper(application)
+
     private val _uiState = MutableStateFlow(LoginUiState())
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
 
@@ -19,6 +24,10 @@ class LoginViewModel: ViewModel() {
     }
     fun onContrasenaCambia(contrasena: String) {
         _uiState.update { it.copy(contrasena = contrasena, errorContrasena = null, errorGeneral = null)}
+    }
+
+    fun onAlternarVisibilidadContrasena() {
+        _uiState.update { it.copy(contrasenaVisible = !it.contrasenaVisible) }
     }
 
     fun onIniciarSesion(onExito: (Usuario) -> Unit) {
@@ -45,52 +54,19 @@ class LoginViewModel: ViewModel() {
             return
         }
 
-        //Esto es por mientras, todas las contrasenas son 12345678.
-        if (estado.contrasena != "12345678") {
+        val correoLimpio = estado.correo.lowercase().trim()
+        val usuarioEncontrado = dbHelper.buscarPorCorreo(correoLimpio)
+
+        if (usuarioEncontrado == null) {
+            _uiState.update { it.copy(errorCorreo = "El correo no está registrado en el sistema") }
+            return
+        }
+
+        if (estado.contrasena != usuarioEncontrado.contrasena) {
             _uiState.update { it.copy(errorContrasena = "Contraseña incorrecta") }
             return
         }
 
-        //Esto es por mientras, de ahí con Base de Datos haremos los usuarios.
-        val usuarioAutenticado = when (estado.correo.lowercase().trim()) {
-            "mgodoy@induztek.ejemplo" ->
-                Usuario(
-                    "1",
-                    "Matías Godoy Herrera",
-                    "mgodoy@induztek.ejemplo",
-                    RolUsuario.TECNICO)
-
-            "acontreras@induztek.ejemplo" ->
-                Usuario(
-                    "2",
-                    "Andrea Contreras Silva",
-                    "acontreras@induztek.ejemplo",
-                    RolUsuario.INGENIERO
-                )
-
-            "respinoza@induztek.ejemplo" ->
-                Usuario(
-                    "3",
-                    "Ricardo Espinoza Lagos",
-                    "respinoza@induztek.ejemplo",
-                    RolUsuario.JEFE_TECNICO
-                )
-
-            "mfuentes@envpacifico.ejemplo" ->
-                Usuario(
-                    "4",
-                    "Marcela Fuentes Rojas",
-                    "mfuentes@envpacifico.ejemplo",
-                    RolUsuario.CLIENTE,
-                    "Envasadora del Pacífico"
-                )
-
-            else -> {
-                _uiState.update { it.copy(errorCorreo = "El correo no está registrado en el sistema") }
-                return
-            }
-        }
-        onExito(usuarioAutenticado)
+        onExito(usuarioEncontrado)
     }
-
 }

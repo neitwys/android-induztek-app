@@ -9,24 +9,22 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.induztek.app.R
 import com.induztek.app.model.MenuPrincipalUiState
+import com.induztek.app.model.Usuario
 import com.induztek.app.ui.components.TarjetaSeccion
 import com.induztek.app.ui.theme.Dimens
 import com.induztek.app.viewmodel.MenuPrincipalViewModel
@@ -34,12 +32,19 @@ import com.induztek.app.viewmodel.MenuPrincipalViewModel
 //3. Constructor
 @Composable
 fun MenuPrincipalScreen(
+    usuario: Usuario?,
+
     viewModel: MenuPrincipalViewModel = viewModel(),
     onNavegarRegistroCliente: () -> Unit,
 
     onVerPerfil: () -> Unit = {},
     onCerrarSesion: () -> Unit = {}
 ) {
+    // Cada vez que 'usuario' cambie o la pantalla cargue, actualizamos el ViewModel
+    LaunchedEffect(usuario) {
+        viewModel.cargarUsuario(usuario)
+    }
+
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     MenuPrincipalContent(
         uiState = uiState,

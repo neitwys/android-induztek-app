@@ -27,8 +27,8 @@ fun AppNavegacion() {
             LoginScreen(
                 onLoginExitoso = { usuario ->
                         usuarioActual = usuario
-                    navController.navigate("menu_principal") {
-                        popUpTo("login") { inclusive = true }
+                    navController.navigate(Ruta.MenuPrincipal.ruta) {
+                        popUpTo(Ruta.Login.ruta) { inclusive = true }
                     }
                 }
             )
@@ -37,6 +37,7 @@ fun AppNavegacion() {
         // 2. Ruta del Menu principal.
         composable(Ruta.MenuPrincipal.ruta) {
             MenuPrincipalScreen(
+                usuario = usuarioActual,
                 onNavegarRegistroCliente = {
                     navController.navigate(Ruta.RegistroCliente.ruta)
                 }

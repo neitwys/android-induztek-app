@@ -45,6 +45,7 @@ fun LoginScreen(
         uiState = uiState,
         onCorreoCambia = viewModel::onCorreoCambia,
         onContrasenaCambia = viewModel::onContrasenaCambia,
+        onAlternarVisible = viewModel::onAlternarVisibilidadContrasena,
         onIngresar = { viewModel.onIniciarSesion(onLoginExitoso) }
     )
 }
@@ -55,6 +56,7 @@ fun LoginContent(
     uiState: LoginUiState,
     onCorreoCambia: (String) -> Unit,
     onContrasenaCambia: (String) -> Unit,
+    onAlternarVisible: () -> Unit,
     onIngresar: () -> Unit
 ) {
     Scaffold(
@@ -102,8 +104,8 @@ fun LoginContent(
                         valor = uiState.contrasena,
                         onValorCambia = onContrasenaCambia,
                         etiqueta = "Contraseña",
-                        visible = false,
-                        onAlternarVisible = {},
+                        visible = uiState.contrasenaVisible,
+                        onAlternarVisible = onAlternarVisible,
                         error = uiState.errorContrasena
                     )
                 }
@@ -130,6 +132,7 @@ fun LoginPreview() {
             uiState = LoginUiState(),
             onCorreoCambia = {},
             onContrasenaCambia = {},
+            onAlternarVisible = {},
             onIngresar = {}
         )
     }
