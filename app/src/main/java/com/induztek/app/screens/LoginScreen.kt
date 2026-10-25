@@ -9,7 +9,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -118,11 +121,56 @@ fun LoginContent(
                     modifier = Modifier.fillMaxWidth()
                 )
 
+                CredencialesPrueba()
+
                 Spacer(modifier = Modifier.height(Dimens.espacioGrande))
             }
         }
     }
 }
+
+@Composable
+private fun CredencialesPrueba() {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = Dimens.espacioMedio),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(Dimens.espacioMedio),
+            verticalArrangement = Arrangement.spacedBy(Dimens.espacioChico)
+        ) {
+            Text(
+                text = "💡 Credenciales de Prueba (Testing)",
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            HorizontalDivider()
+
+            Text(
+                text = "1. Técnico: mgodoy@induztek.ejemplo | Pass: 123456789",
+                style = MaterialTheme.typography.bodySmall
+            )
+            Text(
+                text = "2. Ingeniero: acontreras@induztek.ejemplo | Pass: 987654321",
+                style = MaterialTheme.typography.bodySmall
+            )
+            Text(
+                text = "3. Jefe Técnico: respinoza@induztek.ejemplo | Pass: 135792468",
+                style = MaterialTheme.typography.bodySmall
+            )
+            Text(
+                text = "4. Cliente: mfuentes@envpacifico.ejemplo | Pass: 246813579",
+                style = MaterialTheme.typography.bodySmall
+            )
+        }
+    }
+}
+
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
