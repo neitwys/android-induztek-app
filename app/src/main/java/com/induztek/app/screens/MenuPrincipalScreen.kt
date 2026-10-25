@@ -11,12 +11,15 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -37,22 +40,23 @@ import com.induztek.app.model.MenuPrincipalUiState
 import com.induztek.app.model.Usuario
 import com.induztek.app.ui.components.TarjetaSeccion
 import com.induztek.app.ui.theme.Dimens
+import com.induztek.app.ui.theme.ModoTema
 import com.induztek.app.viewmodel.MenuPrincipalViewModel
 import kotlinx.coroutines.launch
 
-//3. Constructor
 @Composable
 fun MenuPrincipalScreen(
     usuario: Usuario?,
-
+    modoTemaActual: ModoTema = ModoTema.SISTEMA,
+    onCambiarTema: (ModoTema) -> Unit = {},
     viewModel: MenuPrincipalViewModel = viewModel(),
     onNavegarRegistroCliente: () -> Unit,
     onNavegarListaClientes: () -> Unit,
-
+    onNavegarRegistroPrueba: () -> Unit = {},
+    onNavegarHistorialEquipos: () -> Unit = {},
     onVerPerfil: () -> Unit = {},
     onCerrarSesion: () -> Unit = {}
 ) {
-    // Cada vez que 'usuario' cambie o la pantalla cargue, actualizamos el ViewModel
     LaunchedEffect(usuario) {
         viewModel.cargarUsuario(usuario)
     }
@@ -60,84 +64,117 @@ fun MenuPrincipalScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     MenuPrincipalContent(
         uiState = uiState,
+        modoTemaActual = modoTemaActual,
+        onCambiarTema = onCambiarTema,
         onNavegarRegistroCliente = onNavegarRegistroCliente,
         onNavegarListaClientes = onNavegarListaClientes,
+        onNavegarRegistroPrueba = onNavegarRegistroPrueba,
+        onNavegarHistorialEquipos = onNavegarHistorialEquipos,
         onCerrarSesion = onCerrarSesion
     )
 }
 
-//1. Contenido
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MenuPrincipalContent(
     uiState: MenuPrincipalUiState,
+    modoTemaActual: ModoTema = ModoTema.SISTEMA,
+    onCambiarTema: (ModoTema) -> Unit = {},
     onNavegarRegistroCliente: () -> Unit,
     onNavegarListaClientes: () -> Unit,
+    onNavegarRegistroPrueba: () -> Unit = {},
+    onNavegarHistorialEquipos: () -> Unit = {},
     onCerrarSesion: () -> Unit = {}
-
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
     ModalNavigationDrawer(
-    drawerState = drawerState,
-    drawerContent = {
-        ModalDrawerSheet {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(Dimens.espacioGrande),
-                verticalArrangement = Arrangement.spacedBy(Dimens.espacioChico)
-            ) {
-                Text(
-                    text = "Opciones",
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(bottom = Dimens.espacioMedio)
-                )
-                ListItem(
-                    headlineContent = { Text("Listado de Clientes e Instalaciones") },
-                    leadingContent = {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_giro),
-                            contentDescription = null
-                        )
-                    },
-                    modifier = Modifier.clickable {
-                        scope.launch { drawerState.close() }
-                        onNavegarListaClientes() // Acción que lleva a la nueva pantalla
-                    }
-                )
-                ListItem(
-                    headlineContent = { Text("Cerrar Sesión") },
-                    leadingContent = {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_salir),
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.error
-                        )
-                    },
-                    modifier = Modifier.clickable {
-                        scope.launch { drawerState.close() }
-                        onCerrarSesion()
-                    }
-                )
+        drawerState = drawerState,
+        drawerContent = {
+            ModalDrawerSheet {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(Dimens.espacioGrande),
+                    verticalArrangement = Arrangement.spacedBy(Dimens.espacioChico)
+                ) {
+                    Text(
+                        text = "Opciones",
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.padding(bottom = Dimens.espacioChico)
+                    )
 
+                    ListItem(
+                        headlineContent = { Text("Listado de Clientes") },
+                        leadingContent = { Icon(painter = painterResource(R.drawable.ic_giro), contentDescription = null) },
+                        modifier = Modifier.clickable {
+                            scope.launch { drawerState.close() }
+                            onNavegarListaClientes()
+                        }
+                    )
+
+                    ListItem(
+                        headlineContent = { Text("Registrar Prueba en Terreno") },
+                        leadingContent = { Icon(painter = painterResource(R.drawable.ic_giro), contentDescription = null) },
+                        modifier = Modifier.clickable {
+                            scope.launch { drawerState.close() }
+                            onNavegarRegistroPrueba()
+                        }
+                    )
+
+                    ListItem(
+                        headlineContent = { Text("Historial de Equipos") },
+                        leadingContent = { Icon(painter = painterResource(R.drawable.ic_giro), contentDescription = null) },
+                        modifier = Modifier.clickable {
+                            scope.launch { drawerState.close() }
+                            onNavegarHistorialEquipos()
+                        }
+                    )
+
+                    HorizontalDivider(modifier = Modifier.padding(vertical = Dimens.espacioChico))
+
+                    Text("Apariencia", style = MaterialTheme.typography.titleMedium)
+
+                    ListItem(
+                        headlineContent = { Text("Modo Claro") },
+                        leadingContent = { RadioButton(selected = modoTemaActual == ModoTema.CLARO, onClick = null) },
+                        modifier = Modifier.clickable { onCambiarTema(ModoTema.CLARO) }
+                    )
+                    ListItem(
+                        headlineContent = { Text("Modo Oscuro") },
+                        leadingContent = { RadioButton(selected = modoTemaActual == ModoTema.OSCURO, onClick = null) },
+                        modifier = Modifier.clickable { onCambiarTema(ModoTema.OSCURO) }
+                    )
+                    ListItem(
+                        headlineContent = { Text("Predeterminado del Sistema") },
+                        leadingContent = { RadioButton(selected = modoTemaActual == ModoTema.SISTEMA, onClick = null) },
+                        modifier = Modifier.clickable { onCambiarTema(ModoTema.SISTEMA) }
+                    )
+
+                    HorizontalDivider(modifier = Modifier.padding(vertical = Dimens.espacioChico))
+
+                    ListItem(
+                        headlineContent = { Text("Cerrar Sesión") },
+                        leadingContent = {
+                            Icon(painter = painterResource(R.drawable.ic_salir), contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                        },
+                        modifier = Modifier.clickable {
+                            scope.launch { drawerState.close() }
+                            onCerrarSesion()
+                        }
+                    )
+                }
             }
         }
-    }
     ) {
         Scaffold(
             topBar = {
                 TopAppBar(
                     title = { Text(stringResource(R.string.menu_titulo_pantalla)) },
                     navigationIcon = {
-                        IconButton(onClick = {
-                            scope.launch { drawerState.open() }
-                        }) {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_menu),
-                                contentDescription = "Abrir menú lateral"
-                            )
+                        IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                            Icon(painter = painterResource(R.drawable.ic_menu), contentDescription = "Abrir menú lateral")
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
@@ -148,8 +185,7 @@ fun MenuPrincipalContent(
                 )
             },
             containerColor = MaterialTheme.colorScheme.background,
-    ) {
-        innerPadding ->
+        ) { innerPadding ->
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -158,46 +194,45 @@ fun MenuPrincipalContent(
                     .padding(Dimens.espacioGrande),
                 verticalArrangement = Arrangement.spacedBy(Dimens.espacioMedio)
             ) {
-                // Bienvenida
                 Text(
                     text = "Bienvenido, ${uiState.nombreUsuario}",
                     style = MaterialTheme.typography.titleMedium
                 )
 
-                // Tarjeta de Módulo: Clientes e Instalaciones
-                TarjetaSeccion(titulo = stringResource(R.string.menu_seccion_modulos)) {
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(Dimens.espacioChico)
-                    ) {
-                        Text(
-                            text = stringResource(R.string.menu_card_clientes_titulo),
-                            style = MaterialTheme.typography.bodyLarge
-                        )
-                        Text(
-                            text = stringResource(R.string.menu_card_clientes_desc),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                // Tarjeta 1: Clientes
+                TarjetaSeccion(titulo = "Módulo Clientes") {
+                    Column(verticalArrangement = Arrangement.spacedBy(Dimens.espacioChico)) {
+                        Text("Gestión de Clientes e Instalaciones", style = MaterialTheme.typography.bodyLarge)
                         Button(
                             onClick = onNavegarRegistroCliente,
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text(stringResource(R.string.menu_btn_ingresar))
+                            Text("Registrar Nuevo Cliente")
+                        }
+                    }
+                }
+
+                // Tarjeta 2: Operaciones de Terreno (Pruebas + Historial)
+                TarjetaSeccion(titulo = "Módulo Pruebas en Terreno (Induztek)") {
+                    Column(verticalArrangement = Arrangement.spacedBy(Dimens.espacioChico)) {
+                        Text("Protocolos y Certificaciones", style = MaterialTheme.typography.bodyLarge)
+
+                        Button(
+                            onClick = onNavegarRegistroPrueba,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Registrar Prueba (Cámara & GPS)")
+                        }
+
+                        OutlinedButton(
+                            onClick = onNavegarHistorialEquipos,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(" Consultar Historial de Equipos")
                         }
                     }
                 }
             }
         }
     }
-}
-
-@Preview(showBackground = true, showSystemUi = true)
-@Composable
-fun MenuPrincipalPreview() {
-    MenuPrincipalContent(
-        uiState = MenuPrincipalUiState(nombreUsuario = "Carlos Ingeniero"),
-        onNavegarRegistroCliente = {},
-        onNavegarListaClientes = {}
-    )
 }

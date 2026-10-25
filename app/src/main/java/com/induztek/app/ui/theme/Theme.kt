@@ -1,6 +1,5 @@
 package com.induztek.app.ui.theme
 
-import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -12,6 +11,13 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
+
+// Enum para manejar las 3 opciones de tema
+enum class ModoTema {
+    CLARO,
+    OSCURO,
+    SISTEMA
+}
 
 private val EsquemaOscuro = darkColorScheme(
     primary = PrimarioClaro,
@@ -43,28 +49,31 @@ private val EsquemaClaro = lightColorScheme(
     onSurface = TextoOscuro
 )
 
-//
 private val Formas = Shapes(
     small = RoundedCornerShape(Dimens.espacioChico),
     medium = RoundedCornerShape(Dimens.radioCampo),
     large = RoundedCornerShape(Dimens.radioTarjeta)
 )
 
-
 @Composable
 fun InduztekAppTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
+    modoTema: ModoTema = ModoTema.SISTEMA,
     dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
+    // Evalúa si la UI debe mostrarse en modo oscuro según la selección
+    val esOscuro = when (modoTema) {
+        ModoTema.CLARO -> false
+        ModoTema.OSCURO -> true
+        ModoTema.SISTEMA -> isSystemInDarkTheme()
+    }
+
     val colorScheme = when {
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+            if (esOscuro) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
-
-        darkTheme -> EsquemaOscuro
+        esOscuro -> EsquemaOscuro
         else -> EsquemaClaro
     }
 

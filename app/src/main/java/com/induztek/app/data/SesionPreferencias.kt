@@ -10,6 +10,7 @@ class SesionPreferencias(context: Context) {
 
     companion object {
         private const val CLAVE_ID_USUARIO = "id_usuario"
+        private const val CLAVE_MODO_TEMA = "pref_modo_tema" // Clave para guardar el tema
         private const val SIN_SESION = -1L
     }
 
@@ -24,5 +25,17 @@ class SesionPreferencias(context: Context) {
     // Borra el ID guardado (se usa cuando el usuario presiona "Cerrar Sesión")
     fun borrar() {
         prefs.edit { remove(CLAVE_ID_USUARIO) }
+    }
+
+    // --- GESTIÓN DE TEMA (MODO CLARO / OSCURO / SISTEMA) ---
+
+    // Guarda el modo elegido: "CLARO", "OSCURO" o "SISTEMA"
+    fun guardarModoTema(modo: String) {
+        prefs.edit { putString(CLAVE_MODO_TEMA, modo) }
+    }
+
+    // Lee el modo guardado. Si no hay ninguno, por defecto devuelve "SISTEMA"
+    fun obtenerModoTema(): String {
+        return prefs.getString(CLAVE_MODO_TEMA, "SISTEMA") ?: "SISTEMA"
     }
 }
