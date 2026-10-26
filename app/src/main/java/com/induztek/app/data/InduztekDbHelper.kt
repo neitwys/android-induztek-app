@@ -9,13 +9,14 @@ import com.induztek.app.model.Equipo
 import com.induztek.app.model.ProtocoloPrueba
 import com.induztek.app.model.Rol
 import com.induztek.app.model.Usuario
+import com.induztek.app.util.SeguridadUtils
 
 class InduztekDbHelper(context: Context) :
     SQLiteOpenHelper(context, NOMBRE_DB, null, VERSION_DB) {
 
     companion object {
         private const val NOMBRE_DB = "induztek.db"
-        private const val VERSION_DB = 4
+        private const val VERSION_DB = 5
 
         //----------------- TABLA ROLES -----------------//
         private const val TABLA_ROLES = "roles"
@@ -142,12 +143,17 @@ class InduztekDbHelper(context: Context) :
                     "(3, 'Jefe Técnico'), " +
                     "(4, 'Usuario Cliente')"
 
+        // Las contraseñas precargadas ahora son HASH SHA-256 de:
+        // '123456789' -> '15e2b0d3c33891ebb0f1ef609ec419420c20e320ce94c65fbc8c3312448eb225'
+        // '987654321' -> 'bfb032d1f73602f314810c9c7f212f86a9782559595a89ee1d56e18f259b360a'
+        // '135792468' -> 'a768d60ef4fb3d73516f48105d10d185ef35bfae1bc98a58f4c39999496660fb'
+        // '246813579' -> 'dfb97a760ef164c48f219d3f1146747127e5eb562efee76dbfc42d93d14467c6'
         private const val SQL_PRECARGAR_USUARIOS =
             "INSERT INTO $TABLA_USUARIOS ($USU_NOMBRE, $USU_CORREO, $USU_CONTRASENA, $USU_EMPRESA, $USU_ROL) VALUES " +
-                    "('Matías Godoy Herrera', 'mgodoy@induztek.ejemplo', '123456789', NULL, 1), " +
-                    "('Andrea Contreras Silva', 'acontreras@induztek.ejemplo', '987654321', NULL, 2), " +
-                    "('Ricardo Espinoza Lagos', 'respinoza@induztek.ejemplo', '135792468', NULL, 3), " +
-                    "('Marcela Fuentes Rojas', 'mfuentes@envpacifico.ejemplo', '246813579', 'Envasadora del Pacífico', 4)"
+                    "('Matías Godoy Herrera', 'mgodoy@induztek.ejemplo', '15e2b0d3c33891ebb0f1ef609ec419420c20e320ce94c65fbc8c3312448eb225', NULL, 1), " +
+                    "('Andrea Contreras Silva', 'acontreras@induztek.ejemplo', 'bfb032d1f73602f314810c9c7f212f86a9782559595a89ee1d56e18f259b360a', NULL, 2), " +
+                    "('Ricardo Espinoza Lagos', 'respinoza@induztek.ejemplo', 'a768d60ef4fb3d73516f48105d10d185ef35bfae1bc98a58f4c39999496660fb', NULL, 3), " +
+                    "('Marcela Fuentes Rojas', 'mfuentes@envpacifico.ejemplo', 'dfb97a760ef164c48f219d3f1146747127e5eb562efee76dbfc42d93d14467c6', 'Envasadora del Pacífico', 4)"
 
         private const val SQL_PRECARGAR_CLIENTES =
             "INSERT INTO $TABLA_CLIENTES ($CLI_ID, $CLI_RAZON_SOCIAL, $CLI_RUT, $CLI_GIRO, $CLI_CONTACTO, $CLI_TELEFONO, $CLI_CORREO) VALUES " +
@@ -223,6 +229,12 @@ class InduztekDbHelper(context: Context) :
     fun insertarUsuario(usuario: Usuario): Long =
         writableDatabase.insert(TABLA_USUARIOS, null, valoresDe(usuario))
 
+    fun autenticarUsuario(correo: String, contrasenaPlana: String): Usuario? {
+        val claveHash = SeguridadUtils.hashSHA256(contrasenaPlana.trim())
+        val sql = "$SQL_SELECT_USUARIOS WHERE u.$USU_CORREO = ? AND u.$USU_CONTRASENA = ?"
+        return consultarUsuarios(sql, arrayOf(correo.trim(), claveHash)).firstOrNull()
+    }
+
     fun listarUsuarios(): List<Usuario> =
         consultarUsuarios("$SQL_SELECT_USUARIOS ORDER BY u.$USU_NOMBRE", null)
 
@@ -240,12 +252,13 @@ class InduztekDbHelper(context: Context) :
             .firstOrNull()
 
     fun buscarPorCorreo(correo: String): Usuario? =
-        consultarUsuarios("$SQL_SELECT_USUARIOS WHERE u.$USU_CORREO = ?", arrayOf(correo))
+        consultarUsuarios("$SQL_SELECT_USUARIOS WHERE u.$USU_CORREO = ?", arrayOf(correo.trim()))
             .firstOrNull()
 
-    fun actualizarContrasena(idUsuario: Long, nuevaContrasena: String): Int {
+    fun actualizarContrasena(idUsuario: Long, nuevaContrasenaPlana: String): Int {
+        val claveHash = SeguridadUtils.hashSHA256(nuevaContrasenaPlana.trim())
         val valores = ContentValues().apply {
-            put(USU_CONTRASENA, nuevaContrasena)
+            put(USU_CONTRASENA, claveHash)
         }
         return writableDatabase.update(
             TABLA_USUARIOS, valores, "$USU_ID = ?", arrayOf(idUsuario.toString())
@@ -413,7 +426,7 @@ class InduztekDbHelper(context: Context) :
     private fun valoresDe(usuario: Usuario) = ContentValues().apply {
         put(USU_NOMBRE, usuario.nombre)
         put(USU_CORREO, usuario.correo)
-        put(USU_CONTRASENA, usuario.contrasena)
+        put(USU_CONTRASENA, SeguridadUtils.hashSHA256(usuario.contrasena))
         put(USU_EMPRESA, usuario.empresaCliente)
         put(USU_ROL, usuario.rolId)
     }

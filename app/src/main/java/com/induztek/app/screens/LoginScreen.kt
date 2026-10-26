@@ -16,10 +16,12 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
@@ -40,7 +42,8 @@ import com.induztek.app.viewmodel.LoginViewModel
 @Composable
 fun LoginScreen(
     viewModel: LoginViewModel = viewModel(),
-    onLoginExitoso: (Usuario) -> Unit
+    onLoginExitoso: (Usuario) -> Unit,
+    onNavegarRecuperarContrasena: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -49,7 +52,8 @@ fun LoginScreen(
         onCorreoCambia = viewModel::onCorreoCambia,
         onContrasenaCambia = viewModel::onContrasenaCambia,
         onAlternarVisible = viewModel::onAlternarVisibilidadContrasena,
-        onIngresar = { viewModel.onIniciarSesion(onLoginExitoso) }
+        onIngresar = { viewModel.onIniciarSesion(onLoginExitoso) },
+        onNavegarRecuperarContrasena = onNavegarRecuperarContrasena
     )
 }
 
@@ -60,7 +64,8 @@ fun LoginContent(
     onCorreoCambia: (String) -> Unit,
     onContrasenaCambia: (String) -> Unit,
     onAlternarVisible: () -> Unit,
-    onIngresar: () -> Unit
+    onIngresar: () -> Unit,
+    onNavegarRecuperarContrasena: () -> Unit = {}
 ) {
     Scaffold(
         topBar = {
@@ -111,6 +116,17 @@ fun LoginContent(
                         onAlternarVisible = onAlternarVisible,
                         error = uiState.errorContrasena
                     )
+
+                    TextButton(
+                        onClick = onNavegarRecuperarContrasena,
+                        modifier = Modifier.align(Alignment.End)
+                    ) {
+                        Text(
+                            text = "¿Olvidaste tu contraseña?",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(Dimens.espacioMedio))
@@ -144,7 +160,7 @@ private fun CredencialesPrueba() {
             verticalArrangement = Arrangement.spacedBy(Dimens.espacioChico)
         ) {
             Text(
-                text = "💡 Credenciales de Prueba (Testing)",
+                text = "Credenciales de Prueba (Testing)",
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -171,7 +187,6 @@ private fun CredencialesPrueba() {
     }
 }
 
-
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun LoginPreview() {
@@ -181,7 +196,8 @@ fun LoginPreview() {
             onCorreoCambia = {},
             onContrasenaCambia = {},
             onAlternarVisible = {},
-            onIngresar = {}
+            onIngresar = {},
+            onNavegarRecuperarContrasena = {}
         )
     }
 }

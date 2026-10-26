@@ -13,6 +13,7 @@ import com.induztek.app.screens.ClientesScreen
 import com.induztek.app.screens.HistorialEquiposScreen
 import com.induztek.app.screens.LoginScreen
 import com.induztek.app.screens.MenuPrincipalScreen
+import com.induztek.app.screens.RecuperarContrasenaScreen
 import com.induztek.app.screens.RegistroClienteScreen
 import com.induztek.app.screens.RegistroPruebaScreen
 import com.induztek.app.ui.theme.ModoTema
@@ -37,11 +38,21 @@ fun AppNavegacion(
                     navController.navigate(Ruta.MenuPrincipal.ruta) {
                         popUpTo(Ruta.Login.ruta) { inclusive = true }
                     }
+                },
+                onNavegarRecuperarContrasena = {
+                    navController.navigate(Ruta.RecuperarContrasena.ruta)
                 }
             )
         }
 
-        // 2. Menú Principal
+        // 2. Recuperar Contraseña
+        composable(Ruta.RecuperarContrasena.ruta) {
+            RecuperarContrasenaScreen(
+                onVolver = { navController.popBackStack() }
+            )
+        }
+
+        // 3. Menú Principal
         composable(Ruta.MenuPrincipal.ruta) {
             MenuPrincipalScreen(
                 usuario = usuarioActual,
@@ -70,21 +81,21 @@ fun AppNavegacion(
             )
         }
 
-        // 3. Registro Clientes
+        // 4. Registro Clientes
         composable(Ruta.RegistroCliente.ruta) {
             RegistroClienteScreen(
                 onVolver = { navController.popBackStack() }
             )
         }
 
-        // 4. Lista Clientes
+        // 5. Lista Clientes
         composable(Ruta.Clientes.ruta) {
             ClientesScreen(
                 onVolver = { navController.popBackStack() }
             )
         }
 
-        // 5. NUEVA: Registro de Prueba en Terreno
+        // 6. Registro de Prueba en Terreno
         composable(Ruta.RegistroPrueba.ruta) {
             RegistroPruebaScreen(
                 idUsuarioTecnico = usuarioActual?.id ?: 1L,
@@ -92,7 +103,7 @@ fun AppNavegacion(
             )
         }
 
-        // 6. NUEVA: Historial y Consulta de Equipos
+        // 7. Historial y Consulta de Equipos
         composable(Ruta.HistorialEquipos.ruta) {
             HistorialEquiposScreen(
                 onVolver = { navController.popBackStack() }
