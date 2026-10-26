@@ -32,7 +32,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.induztek.app.R
@@ -50,11 +49,11 @@ fun MenuPrincipalScreen(
     modoTemaActual: ModoTema = ModoTema.SISTEMA,
     onCambiarTema: (ModoTema) -> Unit = {},
     viewModel: MenuPrincipalViewModel = viewModel(),
+    onNavegarPerfil: () -> Unit = {},
     onNavegarRegistroCliente: () -> Unit,
     onNavegarListaClientes: () -> Unit,
     onNavegarRegistroPrueba: () -> Unit = {},
     onNavegarHistorialEquipos: () -> Unit = {},
-    onVerPerfil: () -> Unit = {},
     onCerrarSesion: () -> Unit = {}
 ) {
     LaunchedEffect(usuario) {
@@ -66,6 +65,7 @@ fun MenuPrincipalScreen(
         uiState = uiState,
         modoTemaActual = modoTemaActual,
         onCambiarTema = onCambiarTema,
+        onNavegarPerfil = onNavegarPerfil,
         onNavegarRegistroCliente = onNavegarRegistroCliente,
         onNavegarListaClientes = onNavegarListaClientes,
         onNavegarRegistroPrueba = onNavegarRegistroPrueba,
@@ -80,6 +80,7 @@ fun MenuPrincipalContent(
     uiState: MenuPrincipalUiState,
     modoTemaActual: ModoTema = ModoTema.SISTEMA,
     onCambiarTema: (ModoTema) -> Unit = {},
+    onNavegarPerfil: () -> Unit = {},
     onNavegarRegistroCliente: () -> Unit,
     onNavegarListaClientes: () -> Unit,
     onNavegarRegistroPrueba: () -> Unit = {},
@@ -103,6 +104,15 @@ fun MenuPrincipalContent(
                         text = "Opciones",
                         style = MaterialTheme.typography.titleMedium,
                         modifier = Modifier.padding(bottom = Dimens.espacioChico)
+                    )
+
+                    ListItem(
+                        headlineContent = { Text("Mi Perfil") },
+                        leadingContent = { Icon(painter = painterResource(R.drawable.ic_person), contentDescription = null) },
+                        modifier = Modifier.clickable {
+                            scope.launch { drawerState.close() }
+                            onNavegarPerfil()
+                        }
                     )
 
                     ListItem(
@@ -173,18 +183,34 @@ fun MenuPrincipalContent(
                 TopAppBar(
                     title = { Text(stringResource(R.string.menu_titulo_pantalla)) },
                     navigationIcon = {
-                        IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                            Icon(painter = painterResource(R.drawable.ic_menu), contentDescription = "Abrir menú lateral")
+                        IconButton(
+                            onClick = {
+                                scope.launch { drawerState.open() }
+                            }
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_menu),
+                                contentDescription = "Abrir menú lateral"
+                            )
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = onNavegarPerfil) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_person),
+                                contentDescription = "Ir a mi Perfil"
+                            )
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = MaterialTheme.colorScheme.primary,
                         titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                        navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
+                        navigationIconContentColor = MaterialTheme.colorScheme.onPrimary,
+                        actionIconContentColor = MaterialTheme.colorScheme.onPrimary
                     )
                 )
             },
-            containerColor = MaterialTheme.colorScheme.background,
+            containerColor = MaterialTheme.colorScheme.background
         ) { innerPadding ->
             Column(
                 modifier = Modifier
@@ -199,7 +225,6 @@ fun MenuPrincipalContent(
                     style = MaterialTheme.typography.titleMedium
                 )
 
-                // Tarjeta 1: Clientes
                 TarjetaSeccion(titulo = "Módulo Clientes") {
                     Column(verticalArrangement = Arrangement.spacedBy(Dimens.espacioChico)) {
                         Text("Gestión de Clientes e Instalaciones", style = MaterialTheme.typography.bodyLarge)
@@ -212,7 +237,6 @@ fun MenuPrincipalContent(
                     }
                 }
 
-                // Tarjeta 2: Operaciones de Terreno (Pruebas + Historial)
                 TarjetaSeccion(titulo = "Módulo Pruebas en Terreno (Induztek)") {
                     Column(verticalArrangement = Arrangement.spacedBy(Dimens.espacioChico)) {
                         Text("Protocolos y Certificaciones", style = MaterialTheme.typography.bodyLarge)

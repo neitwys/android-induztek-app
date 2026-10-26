@@ -9,14 +9,14 @@ import com.induztek.app.model.Equipo
 import com.induztek.app.model.ProtocoloPrueba
 import com.induztek.app.model.Rol
 import com.induztek.app.model.Usuario
-import com.induztek.app.util.SeguridadUtils
+import com.induztek.app.utils.SeguridadUtils
 
 class InduztekDbHelper(context: Context) :
     SQLiteOpenHelper(context, NOMBRE_DB, null, VERSION_DB) {
 
     companion object {
         private const val NOMBRE_DB = "induztek.db"
-        private const val VERSION_DB = 5
+        private const val VERSION_DB = 6 // Subimos la versión para forzar actualización de esquema
 
         //----------------- TABLA ROLES -----------------//
         private const val TABLA_ROLES = "roles"
@@ -31,6 +31,7 @@ class InduztekDbHelper(context: Context) :
         private const val USU_CONTRASENA = "contrasena"
         private const val USU_EMPRESA = "empresa_cliente"
         private const val USU_ROL = "id_rol"
+        private const val USU_FOTO_PERFIL = "foto_perfil" // Nueva columna para persistencia
 
         //----------------- TABLA CLIENTES -----------------//
         private const val TABLA_CLIENTES = "clientes"
@@ -74,8 +75,6 @@ class InduztekDbHelper(context: Context) :
         private const val PROT_LATITUD = "latitud"
         private const val PROT_LONGITUD = "longitud"
 
-        //============================================================================================//
-
         //----------------- CREACION TABLAS -----------------//
         private const val SQL_CREAR_ROLES =
             "CREATE TABLE $TABLA_ROLES (" +
@@ -89,6 +88,7 @@ class InduztekDbHelper(context: Context) :
                     "$USU_CORREO TEXT NOT NULL UNIQUE, " +
                     "$USU_CONTRASENA TEXT NOT NULL, " +
                     "$USU_EMPRESA TEXT, " +
+                    "$USU_FOTO_PERFIL TEXT, " +
                     "$USU_ROL INTEGER NOT NULL REFERENCES $TABLA_ROLES($ROL_ID))"
 
         private const val SQL_CREAR_CLIENTES =
@@ -133,9 +133,7 @@ class InduztekDbHelper(context: Context) :
                     "$PROT_LATITUD REAL, " +
                     "$PROT_LONGITUD REAL)"
 
-        //============================================================================================//
-
-        //----------------- PRECARGAR LAS TABLAS -----------------//
+        //----------------- PRECARGAR TABLAS -----------------//
         private const val SQL_PRECARGAR_ROLES =
             "INSERT INTO $TABLA_ROLES ($ROL_ID, $ROL_NOMBRE) VALUES " +
                     "(1, 'Tecnico de Terreno'), " +
@@ -143,11 +141,6 @@ class InduztekDbHelper(context: Context) :
                     "(3, 'Jefe Técnico'), " +
                     "(4, 'Usuario Cliente')"
 
-        // Las contraseñas precargadas ahora son HASH SHA-256 de:
-        // '123456789' -> '15e2b0d3c33891ebb0f1ef609ec419420c20e320ce94c65fbc8c3312448eb225'
-        // '987654321' -> 'bfb032d1f73602f314810c9c7f212f86a9782559595a89ee1d56e18f259b360a'
-        // '135792468' -> 'a768d60ef4fb3d73516f48105d10d185ef35bfae1bc98a58f4c39999496660fb'
-        // '246813579' -> 'dfb97a760ef164c48f219d3f1146747127e5eb562efee76dbfc42d93d14467c6'
         private const val SQL_PRECARGAR_USUARIOS =
             "INSERT INTO $TABLA_USUARIOS ($USU_NOMBRE, $USU_CORREO, $USU_CONTRASENA, $USU_EMPRESA, $USU_ROL) VALUES " +
                     "('Matías Godoy Herrera', 'mgodoy@induztek.ejemplo', '15e2b0d3c33891ebb0f1ef609ec419420c20e320ce94c65fbc8c3312448eb225', NULL, 1), " +
@@ -205,29 +198,14 @@ class InduztekDbHelper(context: Context) :
         onCreate(db)
     }
 
-    //==================================== FUNCIONES ======================================//
-
-    //----------------- ROLES -----------------//
-    fun listarRoles(): List<Rol> {
-        val roles = mutableListOf<Rol>()
-        readableDatabase.rawQuery(
-            "SELECT $ROL_ID, $ROL_NOMBRE FROM $TABLA_ROLES ORDER BY $ROL_ID", null
-        ).use { cursor ->
-            while (cursor.moveToNext()) {
-                roles.add(
-                    Rol(
-                        id = cursor.getLong(cursor.getColumnIndexOrThrow(ROL_ID)),
-                        nombre = cursor.getString(cursor.getColumnIndexOrThrow(ROL_NOMBRE))
-                    )
-                )
-            }
+    //----------------- USUARIOS & FOTO PERFIL -----------------//
+    fun actualizarFotoPerfilUsuario(idUsuario: Long, rutaFoto: String): Boolean {
+        val valores = ContentValues().apply {
+            put(USU_FOTO_PERFIL, rutaFoto)
         }
-        return roles
+        val filas = writableDatabase.update(TABLA_USUARIOS, valores, "$USU_ID = ?", arrayOf(idUsuario.toString()))
+        return filas > 0
     }
-
-    //----------------- USUARIOS -----------------//
-    fun insertarUsuario(usuario: Usuario): Long =
-        writableDatabase.insert(TABLA_USUARIOS, null, valoresDe(usuario))
 
     fun autenticarUsuario(correo: String, contrasenaPlana: String): Usuario? {
         val claveHash = SeguridadUtils.hashSHA256(contrasenaPlana.trim())
@@ -237,15 +215,6 @@ class InduztekDbHelper(context: Context) :
 
     fun listarUsuarios(): List<Usuario> =
         consultarUsuarios("$SQL_SELECT_USUARIOS ORDER BY u.$USU_NOMBRE", null)
-
-    fun buscarUsuarios(texto: String): List<Usuario> {
-        val patron = "%$texto%"
-        return consultarUsuarios(
-            "$SQL_SELECT_USUARIOS WHERE u.$USU_NOMBRE LIKE ? OR u.$USU_CORREO LIKE ? " +
-                    "ORDER BY u.$USU_NOMBRE",
-            arrayOf(patron, patron)
-        )
-    }
 
     fun buscarPorId(id: Long): Usuario? =
         consultarUsuarios("$SQL_SELECT_USUARIOS WHERE u.$USU_ID = ?", arrayOf(id.toString()))
@@ -265,15 +234,7 @@ class InduztekDbHelper(context: Context) :
         )
     }
 
-    fun actualizarUsuario(usuario: Usuario): Int =
-        writableDatabase.update(
-            TABLA_USUARIOS, valoresDe(usuario), "$USU_ID = ?", arrayOf(usuario.id.toString())
-        )
-
-    fun eliminarUsuario(id: Long): Int =
-        writableDatabase.delete(TABLA_USUARIOS, "$USU_ID = ?", arrayOf(id.toString()))
-
-    //----------------- CLIENTES E INSTALACIONES -----------------//
+    //----------------- CLIENTES -----------------//
     fun insertarClienteConInstalacion(
         razonSocial: String, rut: String, giro: String, contacto: String, telefono: String, correo: String,
         nombreInstalacion: String, ubicacion: String, comuna: String, region: String, observaciones: String
@@ -314,9 +275,17 @@ class InduztekDbHelper(context: Context) :
 
     fun listarClientes(): List<ClienteConInstalacion> {
         val lista = mutableListOf<ClienteConInstalacion>()
-        val sql = "SELECT c.*, i.$INST_NOMBRE, i.$INST_UBICACION, i.$INST_COMUNA, i.$INST_REGION " +
-                "FROM $TABLA_CLIENTES c INNER JOIN $TABLA_INSTALACIONES i ON c.$CLI_ID = i.$INST_CLIENTE_ID " +
-                "ORDER BY c.$CLI_RAZON_SOCIAL"
+        val sql = """
+            SELECT c.*, 
+                   i.$INST_NOMBRE, 
+                   i.$INST_UBICACION, 
+                   i.$INST_COMUNA, 
+                   i.$INST_REGION 
+            FROM $TABLA_CLIENTES c 
+            INNER JOIN $TABLA_INSTALACIONES i ON c.$CLI_ID = i.$INST_CLIENTE_ID 
+            ORDER BY c.$CLI_RAZON_SOCIAL
+        """.trimIndent()
+
         readableDatabase.rawQuery(sql, null).use { cursor ->
             while (cursor.moveToNext()) {
                 lista.add(
@@ -338,12 +307,11 @@ class InduztekDbHelper(context: Context) :
         }
         return lista
     }
-
     fun eliminarCliente(id: Long): Int {
         return writableDatabase.delete(TABLA_CLIENTES, "$CLI_ID = ?", arrayOf(id.toString()))
     }
 
-    //----------------- EQUIPOS Y PROTOCOLOS DE PRUEBA -----------------//
+    //----------------- EQUIPOS Y PROTOCOLOS -----------------//
     fun listarEquipos(): List<Equipo> {
         val lista = mutableListOf<Equipo>()
         val sql = "SELECT $EQ_ID, $EQ_CODIGO, $EQ_TIPO, $EQ_INST_ID FROM $TABLA_EQUIPOS ORDER BY $EQ_CODIGO"
@@ -422,15 +390,6 @@ class InduztekDbHelper(context: Context) :
         return lista
     }
 
-    //----------------- AYUDANTES -----------------//
-    private fun valoresDe(usuario: Usuario) = ContentValues().apply {
-        put(USU_NOMBRE, usuario.nombre)
-        put(USU_CORREO, usuario.correo)
-        put(USU_CONTRASENA, SeguridadUtils.hashSHA256(usuario.contrasena))
-        put(USU_EMPRESA, usuario.empresaCliente)
-        put(USU_ROL, usuario.rolId)
-    }
-
     private fun consultarUsuarios(sql: String, args: Array<String>?): List<Usuario> {
         val lista = mutableListOf<Usuario>()
         readableDatabase.rawQuery(sql, args).use { cursor ->
@@ -441,17 +400,24 @@ class InduztekDbHelper(context: Context) :
         return lista
     }
 
-    private fun leerUsuario(cursor: Cursor) = Usuario(
-        nombre = cursor.getString(cursor.getColumnIndexOrThrow(USU_NOMBRE)),
-        correo = cursor.getString(cursor.getColumnIndexOrThrow(USU_CORREO)),
-        contrasena = cursor.getString(cursor.getColumnIndexOrThrow(USU_CONTRASENA)),
-        id = cursor.getLong(cursor.getColumnIndexOrThrow(USU_ID)),
-        rolId = cursor.getLong(cursor.getColumnIndexOrThrow(USU_ROL)),
-        rolNombre = cursor.getString(cursor.getColumnIndexOrThrow(ROL_NOMBRE)),
-        empresaCliente = cursor.getString(cursor.getColumnIndexOrThrow(USU_EMPRESA))
-    )
+    private fun leerUsuario(cursor: Cursor): Usuario {
+        val idxFoto = cursor.getColumnIndex(USU_FOTO_PERFIL)
+        val fotoPath = if (idxFoto != -1 && !cursor.isNull(idxFoto)) cursor.getString(idxFoto) else null
+
+        return Usuario(
+            nombre = cursor.getString(cursor.getColumnIndexOrThrow(USU_NOMBRE)),
+            correo = cursor.getString(cursor.getColumnIndexOrThrow(USU_CORREO)),
+            contrasena = cursor.getString(cursor.getColumnIndexOrThrow(USU_CONTRASENA)),
+            id = cursor.getLong(cursor.getColumnIndexOrThrow(USU_ID)),
+            rolId = cursor.getLong(cursor.getColumnIndexOrThrow(USU_ROL)),
+            rolNombre = cursor.getString(cursor.getColumnIndexOrThrow(ROL_NOMBRE)),
+            empresaCliente = cursor.getString(cursor.getColumnIndexOrThrow(USU_EMPRESA)),
+            fotoPerfilPath = fotoPath
+        )
+    }
 }
 
+// Data class necesaria para la función listarClientes()
 data class ClienteConInstalacion(
     val idCliente: Long,
     val razonSocial: String,
@@ -465,3 +431,4 @@ data class ClienteConInstalacion(
     val comuna: String,
     val region: String
 )
+

@@ -6,13 +6,12 @@ import androidx.lifecycle.AndroidViewModel
 import com.induztek.app.data.InduztekDbHelper
 import com.induztek.app.model.LoginUiState
 import com.induztek.app.model.Usuario
+import com.induztek.app.utils.SeguridadUtils // Importamos nuestra utilidad de encriptación
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
-//Cambiamos a AndroidViewModel, porque los DB y los Preferences (en data) necesitan de un Context.
-//AndroidViewModel lo tiene, el ViewModel por defecto no.
 class LoginViewModel(application: Application): AndroidViewModel(application) {
     private val dbHelper = InduztekDbHelper(application)
 
@@ -22,6 +21,7 @@ class LoginViewModel(application: Application): AndroidViewModel(application) {
     fun onCorreoCambia(correo: String) {
         _uiState.update { it.copy(correo = correo, errorCorreo = null, errorGeneral = null)}
     }
+
     fun onContrasenaCambia(contrasena: String) {
         _uiState.update { it.copy(contrasena = contrasena, errorContrasena = null, errorGeneral = null)}
     }
@@ -62,7 +62,10 @@ class LoginViewModel(application: Application): AndroidViewModel(application) {
             return
         }
 
-        if (estado.contrasena != usuarioEncontrado.contrasena) {
+        // Convertimos la clave ingresada a Hash SHA-256 antes de comparar
+        val contrasenaHashIngresada = SeguridadUtils.hashSHA256(estado.contrasena.trim())
+
+        if (contrasenaHashIngresada != usuarioEncontrado.contrasena) {
             _uiState.update { it.copy(errorContrasena = "Contraseña incorrecta") }
             return
         }

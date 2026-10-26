@@ -5,14 +5,18 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.induztek.app.data.InduztekDbHelper
+import com.induztek.app.data.SesionPreferencias
 import com.induztek.app.model.Usuario
 import com.induztek.app.screens.ClientesScreen
 import com.induztek.app.screens.HistorialEquiposScreen
 import com.induztek.app.screens.LoginScreen
 import com.induztek.app.screens.MenuPrincipalScreen
+import com.induztek.app.screens.PerfilScreen
 import com.induztek.app.screens.RecuperarContrasenaScreen
 import com.induztek.app.screens.RegistroClienteScreen
 import com.induztek.app.screens.RegistroPruebaScreen
@@ -24,17 +28,31 @@ fun AppNavegacion(
     onCambiarTema: (ModoTema) -> Unit = {}
 ) {
     val navController = rememberNavController()
+    val context = LocalContext.current
+    val sesionPrefs = remember { SesionPreferencias(context) }
+    val dbHelper = remember { InduztekDbHelper(context) }
+
     var usuarioActual by remember { mutableStateOf<Usuario?>(null) }
+
+    // 1. Cargar usuario guardado al iniciar la app usando sesionPrefs.leer()
+    val idUsuarioGuardado = sesionPrefs.leer()
+    val destinoInicial = if (idUsuarioGuardado != -1L) {
+        usuarioActual = dbHelper.buscarPorId(idUsuarioGuardado)
+        if (usuarioActual != null) Ruta.MenuPrincipal.ruta else Ruta.Login.ruta
+    } else {
+        Ruta.Login.ruta
+    }
 
     NavHost(
         navController = navController,
-        startDestination = Ruta.Login.ruta
+        startDestination = destinoInicial
     ) {
         // 1. Login
         composable(Ruta.Login.ruta) {
             LoginScreen(
                 onLoginExitoso = { usuario ->
                     usuarioActual = usuario
+                    sesionPrefs.guardar(usuario.id) // <-- Usa guardar(id)
                     navController.navigate(Ruta.MenuPrincipal.ruta) {
                         popUpTo(Ruta.Login.ruta) { inclusive = true }
                     }
@@ -58,20 +76,12 @@ fun AppNavegacion(
                 usuario = usuarioActual,
                 modoTemaActual = modoTemaActual,
                 onCambiarTema = onCambiarTema,
-                onNavegarRegistroCliente = {
-                    navController.navigate(Ruta.RegistroCliente.ruta)
-                },
-                onNavegarListaClientes = {
-                    navController.navigate(Ruta.Clientes.ruta)
-                },
-                onNavegarRegistroPrueba = {
-                    navController.navigate(Ruta.RegistroPrueba.ruta)
-                },
-                onNavegarHistorialEquipos = {
-                    navController.navigate(Ruta.HistorialEquipos.ruta)
-                },
+                onNavegarPerfil = { navController.navigate(Ruta.Perfil.ruta) },
+                onNavegarRegistroCliente = { navController.navigate(Ruta.RegistroCliente.ruta) },
+                onNavegarListaClientes = { navController.navigate(Ruta.Clientes.ruta) },
+                onNavegarRegistroPrueba = { navController.navigate(Ruta.RegistroPrueba.ruta) },
+                onNavegarHistorialEquipos = { navController.navigate(Ruta.HistorialEquipos.ruta) },
                 onCerrarSesion = {
-                    val sesionPrefs = com.induztek.app.data.SesionPreferencias(navController.context)
                     sesionPrefs.borrar()
                     usuarioActual = null
                     navController.navigate(Ruta.Login.ruta) {
@@ -107,6 +117,21 @@ fun AppNavegacion(
         composable(Ruta.HistorialEquipos.ruta) {
             HistorialEquiposScreen(
                 onVolver = { navController.popBackStack() }
+            )
+        }
+
+        // 8. Perfil de Usuario
+        composable(Ruta.Perfil.ruta) {
+            PerfilScreen(
+                usuario = usuarioActual,
+                onVolver = { navController.popBackStack() },
+                onCerrarSesion = {
+                    sesionPrefs.borrar()
+                    usuarioActual = null
+                    navController.navigate(Ruta.Login.ruta) {
+                        popUpTo(Ruta.MenuPrincipal.ruta) { inclusive = true }
+                    }
+                }
             )
         }
     }

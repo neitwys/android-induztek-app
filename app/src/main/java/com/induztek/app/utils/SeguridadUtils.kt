@@ -1,4 +1,4 @@
-package com.induztek.app.util
+package com.induztek.app.utils
 
 import java.security.MessageDigest
 
