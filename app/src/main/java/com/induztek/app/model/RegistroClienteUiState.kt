@@ -11,7 +11,7 @@ data class RegistroClienteUiState(
 
     // Datos de la instalación
     val nombreInstalacion: String = "",
-    val ubicacion: String = "", // Dirección exacta (ej: Pedro Fontova 1923)
+    val ubicacion: String = "",
     val comuna: String = "",
     val region: String = "",
     val observacionesAcceso: String = "", // EJ: requiere inducción de seguridad", "sin señal en sala eléctrica"

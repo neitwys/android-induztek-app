@@ -39,6 +39,15 @@ import com.induztek.app.ui.theme.Dimens
 import com.induztek.app.ui.theme.InduztekAppTheme
 import com.induztek.app.viewmodel.LoginViewModel
 
+//imp emer
+
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+
 @Composable
 fun LoginScreen(
     viewModel: LoginViewModel = viewModel(),
@@ -67,6 +76,8 @@ fun LoginContent(
     onIngresar: () -> Unit,
     onNavegarRecuperarContrasena: () -> Unit = {}
 ) {
+    var mostrarEmergente by remember { mutableStateOf(false) }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -136,12 +147,44 @@ fun LoginContent(
                     onClick = onIngresar,
                     modifier = Modifier.fillMaxWidth()
                 )
+                TextButton(
+                    onClick = { mostrarEmergente = true },
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                ) {
+                    Text("Ver información del sistema")
+                }
 
                 CredencialesPrueba()
 
                 Spacer(modifier = Modifier.height(Dimens.espacioGrande))
             }
         }
+    }
+    if (mostrarEmergente) {
+        AlertDialog(
+
+            onDismissRequest = { mostrarEmergente = false },
+            title = {
+                Text("Información de la App")
+            },
+            text = {
+                Text("Aplicación Induztek v1.0\nDesarrollada para el control y gestión de protocolos de pruebas técnicas en terreno.")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = { mostrarEmergente = false }
+                ) {
+                    Text("Aceptar")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { mostrarEmergente = false }
+                ) {
+                    Text("Cerrar")
+                }
+            }
+        )
     }
 }
 

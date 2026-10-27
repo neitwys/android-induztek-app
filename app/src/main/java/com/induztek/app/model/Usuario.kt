@@ -8,5 +8,5 @@ data class Usuario(
     val rolId: Long,
     val rolNombre: String = "",
     val empresaCliente: String? = null,
-    val fotoPerfilPath: String? = null // <- Asegúrate de tener esta línea
+    val fotoPerfilPath: String? = null
 )
