@@ -58,7 +58,7 @@ class LoginViewModel(application: Application): AndroidViewModel(application) {
         val usuarioEncontrado = dbHelper.buscarPorCorreo(correoLimpio)
 
         if (usuarioEncontrado == null) {
-            _uiState.update { it.copy(errorCorreo = "El correo no está registrado en el sistema") }
+            _uiState.update { it.copy(errorCorreo = "El correo y/o contraseña están incorrectas.") }
             return
         }
 
@@ -66,7 +66,7 @@ class LoginViewModel(application: Application): AndroidViewModel(application) {
         val contrasenaHashIngresada = SeguridadUtils.hashSHA256(estado.contrasena.trim())
 
         if (contrasenaHashIngresada != usuarioEncontrado.contrasena) {
-            _uiState.update { it.copy(errorContrasena = "Contraseña incorrecta") }
+            _uiState.update { it.copy(errorContrasena = "El correo y/o contraseña están incorrectas.") }
             return
         }
 

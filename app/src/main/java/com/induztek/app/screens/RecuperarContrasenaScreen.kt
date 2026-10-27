@@ -68,7 +68,7 @@ fun RecuperarContrasenaScreen(
             TarjetaSeccion(titulo = "Restablecer Clave de Acceso") {
                 Column(verticalArrangement = Arrangement.spacedBy(Dimens.espacioChico)) {
                     Text(
-                        text = "Ingrese su correo corporativo registrado y defina su nueva contraseña.",
+                        text = "Ingrese su correo corporativo registrado para validar su identidad.",
                         style = MaterialTheme.typography.bodyMedium
                     )
 
@@ -80,14 +80,47 @@ fun RecuperarContrasenaScreen(
                         singleLine = true
                     )
 
-                    OutlinedTextField(
-                        value = uiState.nuevaContrasena,
-                        onValueChange = { viewModel.onNuevaContrasenaCambia(it) },
-                        label = { Text("Nueva Contraseña") },
-                        visualTransformation = PasswordVisualTransformation(),
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
-                    )
+                    if (uiState.preguntaSeguridad == null) {
+                        Button(
+                            onClick = { viewModel.buscarPreguntaSeguridad() },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(50.dp)
+                        ) {
+                            Text("CONTINUAR")
+                        }
+                    } else {
+                        Text(
+                            text = uiState.preguntaSeguridad ?: "",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+
+                        OutlinedTextField(
+                            value = uiState.respuestaPregunta,
+                            onValueChange = { viewModel.onRespuestaPreguntaCambia(it) },
+                            label = { Text("Respuesta") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+
+                        OutlinedTextField(
+                            value = uiState.nuevaContrasena,
+                            onValueChange = { viewModel.onNuevaContrasenaCambia(it) },
+                            label = { Text("Nueva Contraseña") },
+                            visualTransformation = PasswordVisualTransformation(),
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+
+                        Button(
+                            onClick = { viewModel.restablecerContrasena() },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(50.dp)
+                        ) {
+                            Text("ACTUALIZAR CONTRASEÑA")
+                        }
+                    }
 
                     uiState.mensajeError?.let {
                         Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
@@ -95,15 +128,6 @@ fun RecuperarContrasenaScreen(
 
                     uiState.mensajeExito?.let {
                         Text(it, color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.bodySmall)
-                    }
-
-                    Button(
-                        onClick = { viewModel.restablecerContrasena() },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(50.dp)
-                    ) {
-                        Text("ACTUALIZAR CONTRASEÑA")
                     }
                 }
             }

@@ -16,12 +16,22 @@ class InduztekDbHelper(context: Context) :
 
     companion object {
         private const val NOMBRE_DB = "induztek.db"
-        private const val VERSION_DB = 6 // Subimos la versión para forzar actualización de esquema
+        private const val VERSION_DB = 7 // Subimos la versión para forzar actualización de esquema
 
         //----------------- TABLA ROLES -----------------//
         private const val TABLA_ROLES = "roles"
         private const val ROL_ID = "id_rol"
         private const val ROL_NOMBRE = "nombre_rol"
+
+        //----------------- TABLA EMPRESAS CLIENTES -----------------//
+        private const val TABLA_EMPRESAS_CLIENTES = "empresas_clientes"
+        private const val EMP_ID = "id_empresa"
+        private const val EMP_RAZON_SOCIAL = "razon_social"
+        private const val EMP_RUT = "rut"
+        private const val EMP_GIRO = "giro"
+        private const val EMP_CONTACTO = "contacto"
+        private const val EMP_TELEFONO = "telefono"
+        private const val EMP_CORREO = "correo"
 
         //----------------- TABLA USUARIOS -----------------//
         private const val TABLA_USUARIOS = "usuarios"
@@ -29,19 +39,12 @@ class InduztekDbHelper(context: Context) :
         private const val USU_NOMBRE = "nombre"
         private const val USU_CORREO = "correo"
         private const val USU_CONTRASENA = "contrasena"
-        private const val USU_EMPRESA = "empresa_cliente"
         private const val USU_ROL = "id_rol"
+        private const val USU_TIPO_PREGUNTA = "tipo_pregunta_clave"
+        private const val USU_RESPUESTA_PREGUNTA = "respuesta_pregunta_clave"
         private const val USU_FOTO_PERFIL = "foto_perfil" // Nueva columna para persistencia
+        private const val USU_EMPRESA_ID_FK = "id_empresa_fk"
 
-        //----------------- TABLA CLIENTES -----------------//
-        private const val TABLA_CLIENTES = "clientes"
-        private const val CLI_ID = "id_cliente"
-        private const val CLI_RAZON_SOCIAL = "razon_social"
-        private const val CLI_RUT = "rut"
-        private const val CLI_GIRO = "giro"
-        private const val CLI_CONTACTO = "contacto"
-        private const val CLI_TELEFONO = "telefono"
-        private const val CLI_CORREO = "correo"
 
         //----------------- TABLA INSTALACIONES -----------------//
         private const val TABLA_INSTALACIONES = "instalaciones"
@@ -51,7 +54,7 @@ class InduztekDbHelper(context: Context) :
         private const val INST_COMUNA = "comuna"
         private const val INST_REGION = "region"
         private const val INST_OBS = "observaciones_acceso"
-        private const val INST_CLIENTE_ID = "id_cliente_fk"
+        private const val INST_EMPRESA_ID_FK = "id_empresa_fk"
 
         //----------------- TABLA EQUIPOS -----------------//
         private const val TABLA_EQUIPOS = "equipos"
@@ -81,25 +84,28 @@ class InduztekDbHelper(context: Context) :
                     "$ROL_ID INTEGER PRIMARY KEY AUTOINCREMENT, " +
                     "$ROL_NOMBRE TEXT NOT NULL UNIQUE)"
 
+        private const val SQL_CREAR_EMPRESAS =
+            "CREATE TABLE $TABLA_EMPRESAS_CLIENTES (" +
+                    "$EMP_ID INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                    "$EMP_RAZON_SOCIAL TEXT NOT NULL, " +
+                    "$EMP_RUT TEXT NOT NULL UNIQUE, " +
+                    "$EMP_GIRO TEXT, " +
+                    "$EMP_CONTACTO TEXT, " +
+                    "$EMP_TELEFONO TEXT, " +
+                    "$EMP_CORREO TEXT)"
+
         private const val SQL_CREAR_USUARIOS =
             "CREATE TABLE $TABLA_USUARIOS (" +
                     "$USU_ID INTEGER PRIMARY KEY AUTOINCREMENT, " +
                     "$USU_NOMBRE TEXT NOT NULL, " +
                     "$USU_CORREO TEXT NOT NULL UNIQUE, " +
                     "$USU_CONTRASENA TEXT NOT NULL, " +
-                    "$USU_EMPRESA TEXT, " +
+                    "$USU_TIPO_PREGUNTA INTEGER, " +
+                    "$USU_RESPUESTA_PREGUNTA TEXT, " +
                     "$USU_FOTO_PERFIL TEXT, " +
-                    "$USU_ROL INTEGER NOT NULL REFERENCES $TABLA_ROLES($ROL_ID))"
-
-        private const val SQL_CREAR_CLIENTES =
-            "CREATE TABLE $TABLA_CLIENTES (" +
-                    "$CLI_ID INTEGER PRIMARY KEY AUTOINCREMENT, " +
-                    "$CLI_RAZON_SOCIAL TEXT NOT NULL, " +
-                    "$CLI_RUT TEXT NOT NULL UNIQUE, " +
-                    "$CLI_GIRO TEXT, " +
-                    "$CLI_CONTACTO TEXT, " +
-                    "$CLI_TELEFONO TEXT, " +
-                    "$CLI_CORREO TEXT)"
+                    "$USU_EMPRESA_ID_FK INTEGER, " +
+                    "$USU_ROL INTEGER NOT NULL REFERENCES $TABLA_ROLES($ROL_ID), " +
+                    "FOREIGN KEY ($USU_EMPRESA_ID_FK) REFERENCES $TABLA_EMPRESAS_CLIENTES($EMP_ID) ON DELETE SET NULL)"
 
         private const val SQL_CREAR_INSTALACIONES =
             "CREATE TABLE $TABLA_INSTALACIONES (" +
@@ -109,7 +115,7 @@ class InduztekDbHelper(context: Context) :
                     "$INST_COMUNA TEXT, " +
                     "$INST_REGION TEXT, " +
                     "$INST_OBS TEXT, " +
-                    "$INST_CLIENTE_ID INTEGER NOT NULL REFERENCES $TABLA_CLIENTES($CLI_ID) ON DELETE CASCADE)"
+                    "$INST_EMPRESA_ID_FK INTEGER NOT NULL REFERENCES $TABLA_EMPRESAS_CLIENTES($EMP_ID) ON DELETE CASCADE)"
 
         private const val SQL_CREAR_EQUIPOS =
             "CREATE TABLE $TABLA_EQUIPOS (" +
@@ -139,21 +145,21 @@ class InduztekDbHelper(context: Context) :
                     "(1, 'Tecnico de Terreno'), " +
                     "(2, 'Ingeniero de Pruebas'), " +
                     "(3, 'Jefe Técnico'), " +
-                    "(4, 'Usuario Cliente')"
+                    "(4, 'Representante de Empresa')"
 
-        private const val SQL_PRECARGAR_USUARIOS =
-            "INSERT INTO $TABLA_USUARIOS ($USU_NOMBRE, $USU_CORREO, $USU_CONTRASENA, $USU_EMPRESA, $USU_ROL) VALUES " +
-                    "('Matías Godoy Herrera', 'mgodoy@induztek.ejemplo', '15e2b0d3c33891ebb0f1ef609ec419420c20e320ce94c65fbc8c3312448eb225', NULL, 1), " +
-                    "('Andrea Contreras Silva', 'acontreras@induztek.ejemplo', 'bfb032d1f73602f314810c9c7f212f86a9782559595a89ee1d56e18f259b360a', NULL, 2), " +
-                    "('Ricardo Espinoza Lagos', 'respinoza@induztek.ejemplo', 'a768d60ef4fb3d73516f48105d10d185ef35bfae1bc98a58f4c39999496660fb', NULL, 3), " +
-                    "('Marcela Fuentes Rojas', 'mfuentes@envpacifico.ejemplo', 'dfb97a760ef164c48f219d3f1146747127e5eb562efee76dbfc42d93d14467c6', 'Envasadora del Pacífico', 4)"
-
-        private const val SQL_PRECARGAR_CLIENTES =
-            "INSERT INTO $TABLA_CLIENTES ($CLI_ID, $CLI_RAZON_SOCIAL, $CLI_RUT, $CLI_GIRO, $CLI_CONTACTO, $CLI_TELEFONO, $CLI_CORREO) VALUES " +
+        private const val SQL_PRECARGAR_EMPRESAS =
+            "INSERT INTO $TABLA_EMPRESAS_CLIENTES ($EMP_ID, $EMP_RAZON_SOCIAL, $EMP_RUT, $EMP_GIRO, $EMP_CONTACTO, $EMP_TELEFONO, $EMP_CORREO) VALUES " +
                     "(1, 'Envasadora del Pacífico SpA', '76.543.210-9', 'Industrial / Envasado', 'Carlos Soto', '+56912345678', 'contacto@envasadora.ejemplo')"
 
+        private const val SQL_PRECARGAR_USUARIOS =
+            "INSERT INTO $TABLA_USUARIOS ($USU_NOMBRE, $USU_CORREO, $USU_CONTRASENA, $USU_EMPRESA_ID_FK, $USU_ROL, $USU_TIPO_PREGUNTA, $USU_RESPUESTA_PREGUNTA) VALUES " +
+                    "('Matías Godoy Herrera', 'mgodoy@induztek.ejemplo', '15e2b0d3c33891ebb0f1ef609ec419420c20e320ce94c65fbc8c3312448eb225', NULL, 1, 1, 'toby'), " +
+                    "('Andrea Contreras Silva', 'acontreras@induztek.ejemplo', 'bfb032d1f73602f314810c9c7f212f86a9782559595a89ee1d56e18f259b360a', NULL, 2, 2, 'los prisioneros'), " +
+                    "('Ricardo Espinoza Lagos', 'respinoza@induztek.ejemplo', 'a768d60ef4fb3d73516f48105d10d185ef35bfae1bc98a58f4c39999496660fb', NULL, 3, 3, 'azul'), " +
+                    "('Marcela Fuentes Rojas', 'mfuentes@envpacifico.ejemplo', 'dfb97a760ef164c48f219d3f1146747127e5eb562efee76dbfc42d93d14467c6', 1, 4, 1, 'cachupin')"
+
         private const val SQL_PRECARGAR_INSTALACIONES =
-            "INSERT INTO $TABLA_INSTALACIONES ($INST_NOMBRE, $INST_UBICACION, $INST_COMUNA, $INST_REGION, $INST_OBS, $INST_CLIENTE_ID) VALUES " +
+            "INSERT INTO $TABLA_INSTALACIONES ($INST_NOMBRE, $INST_UBICACION, $INST_COMUNA, $INST_REGION, $INST_OBS, $INST_EMPRESA_ID_FK) VALUES " +
                     "('Planta Lampa', 'Ruta 5 Norte Km 28', 'Lampa', 'Metropolitana', 'Requiere inducción previa', 1)"
 
         private const val SQL_PRECARGAR_EQUIPOS =
@@ -163,9 +169,10 @@ class InduztekDbHelper(context: Context) :
                     "('CB-103', 'Celda de M.T.', 1)"
 
         private const val SQL_SELECT_USUARIOS =
-            "SELECT u.*, r.$ROL_NOMBRE AS $ROL_NOMBRE " +
+            "SELECT u.*, r.$ROL_NOMBRE AS $ROL_NOMBRE, e.$EMP_RAZON_SOCIAL AS nombre_empresa " +
                     "FROM $TABLA_USUARIOS u " +
-                    "INNER JOIN $TABLA_ROLES r ON u.$USU_ROL = r.$ROL_ID"
+                    "INNER JOIN $TABLA_ROLES r ON u.$USU_ROL = r.$ROL_ID " +
+                    "LEFT JOIN $TABLA_EMPRESAS_CLIENTES e ON u.$USU_EMPRESA_ID_FK = e.$EMP_ID"
     }
 
     override fun onConfigure(db: SQLiteDatabase) {
@@ -175,15 +182,15 @@ class InduztekDbHelper(context: Context) :
 
     override fun onCreate(db: SQLiteDatabase) {
         db.execSQL(SQL_CREAR_ROLES)
+        db.execSQL(SQL_CREAR_EMPRESAS)
         db.execSQL(SQL_CREAR_USUARIOS)
-        db.execSQL(SQL_CREAR_CLIENTES)
         db.execSQL(SQL_CREAR_INSTALACIONES)
         db.execSQL(SQL_CREAR_EQUIPOS)
         db.execSQL(SQL_CREAR_PROTOCOLOS)
 
         db.execSQL(SQL_PRECARGAR_ROLES)
+        db.execSQL(SQL_PRECARGAR_EMPRESAS)
         db.execSQL(SQL_PRECARGAR_USUARIOS)
-        db.execSQL(SQL_PRECARGAR_CLIENTES)
         db.execSQL(SQL_PRECARGAR_INSTALACIONES)
         db.execSQL(SQL_PRECARGAR_EQUIPOS)
     }
@@ -192,8 +199,8 @@ class InduztekDbHelper(context: Context) :
         db.execSQL("DROP TABLE IF EXISTS $TABLA_PROTOCOLOS")
         db.execSQL("DROP TABLE IF EXISTS $TABLA_EQUIPOS")
         db.execSQL("DROP TABLE IF EXISTS $TABLA_INSTALACIONES")
-        db.execSQL("DROP TABLE IF EXISTS $TABLA_CLIENTES")
         db.execSQL("DROP TABLE IF EXISTS $TABLA_USUARIOS")
+        db.execSQL("DROP TABLE IF EXISTS $TABLA_EMPRESAS_CLIENTES")
         db.execSQL("DROP TABLE IF EXISTS $TABLA_ROLES")
         onCreate(db)
     }
@@ -234,24 +241,24 @@ class InduztekDbHelper(context: Context) :
         )
     }
 
-    //----------------- CLIENTES -----------------//
-    fun insertarClienteConInstalacion(
+    //----------------- EMPRESAS CLIENTES -----------------//
+    fun insertarEmpresaConInstalacion(
         razonSocial: String, rut: String, giro: String, contacto: String, telefono: String, correo: String,
         nombreInstalacion: String, ubicacion: String, comuna: String, region: String, observaciones: String
     ): Boolean {
         val db = writableDatabase
         db.beginTransaction()
         try {
-            val valoresCliente = ContentValues().apply {
-                put(CLI_RAZON_SOCIAL, razonSocial)
-                put(CLI_RUT, rut)
-                put(CLI_GIRO, giro)
-                put(CLI_CONTACTO, contacto)
-                put(CLI_TELEFONO, telefono)
-                put(CLI_CORREO, correo)
+            val valoresEmpresa = ContentValues().apply {
+                put(EMP_RAZON_SOCIAL, razonSocial)
+                put(EMP_RUT, rut)
+                put(EMP_GIRO, giro)
+                put(EMP_CONTACTO, contacto)
+                put(EMP_TELEFONO, telefono)
+                put(EMP_CORREO, correo)
             }
-            val idClienteGenerado = db.insert(TABLA_CLIENTES, null, valoresCliente)
-            if (idClienteGenerado == -1L) return false
+            val idEmpresaGenerada = db.insert(TABLA_EMPRESAS_CLIENTES, null, valoresEmpresa)
+            if (idEmpresaGenerada == -1L) return false
 
             val valoresInstalacion = ContentValues().apply {
                 put(INST_NOMBRE, nombreInstalacion)
@@ -259,7 +266,7 @@ class InduztekDbHelper(context: Context) :
                 put(INST_COMUNA, comuna)
                 put(INST_REGION, region)
                 put(INST_OBS, observaciones)
-                put(INST_CLIENTE_ID, idClienteGenerado)
+                put(INST_EMPRESA_ID_FK, idEmpresaGenerada)
             }
             val idInstalacionGenerada = db.insert(TABLA_INSTALACIONES, null, valoresInstalacion)
             if (idInstalacionGenerada == -1L) return false
@@ -273,42 +280,42 @@ class InduztekDbHelper(context: Context) :
         }
     }
 
-    fun listarClientes(): List<ClienteConInstalacion> {
-        val lista = mutableListOf<ClienteConInstalacion>()
+    fun listarEmpresas(): List<EmpresaConInstalacion> {
+        val lista = mutableListOf<EmpresaConInstalacion>()
         val sql = """
-            SELECT c.*, 
+            SELECT e.*, 
                    i.$INST_NOMBRE, 
                    i.$INST_UBICACION, 
                    i.$INST_COMUNA, 
                    i.$INST_REGION 
-            FROM $TABLA_CLIENTES c 
-            INNER JOIN $TABLA_INSTALACIONES i ON c.$CLI_ID = i.$INST_CLIENTE_ID 
-            ORDER BY c.$CLI_RAZON_SOCIAL
+            FROM $TABLA_EMPRESAS_CLIENTES e 
+            INNER JOIN $TABLA_INSTALACIONES i ON e.$EMP_ID = i.$INST_EMPRESA_ID_FK 
+            ORDER BY e.$EMP_RAZON_SOCIAL
         """.trimIndent()
 
         readableDatabase.rawQuery(sql, null).use { cursor ->
             while (cursor.moveToNext()) {
                 lista.add(
-                    ClienteConInstalacion(
-                        idCliente = cursor.getLong(cursor.getColumnIndexOrThrow(CLI_ID)),
-                        razonSocial = cursor.getString(cursor.getColumnIndexOrThrow(CLI_RAZON_SOCIAL)),
-                        rut = cursor.getString(cursor.getColumnIndexOrThrow(CLI_RUT)),
-                        giro = cursor.getString(cursor.getColumnIndexOrThrow(CLI_GIRO)),
-                        contacto = cursor.getString(cursor.getColumnIndexOrThrow(CLI_CONTACTO)),
-                        telefono = cursor.getString(cursor.getColumnIndexOrThrow(CLI_TELEFONO)),
-                        correo = cursor.getString(cursor.getColumnIndexOrThrow(CLI_CORREO)),
+                    EmpresaConInstalacion(
+                        idEmpresa = cursor.getLong(cursor.getColumnIndexOrThrow(EMP_ID)),
+                        razonSocial = cursor.getString(cursor.getColumnIndexOrThrow(EMP_RAZON_SOCIAL)),
+                        rut = cursor.getString(cursor.getColumnIndexOrThrow(EMP_RUT)),
+                        giro = cursor.getString(cursor.getColumnIndexOrThrow(EMP_GIRO)) ?: "",
+                        contacto = cursor.getString(cursor.getColumnIndexOrThrow(EMP_CONTACTO)) ?: "",
+                        telefono = cursor.getString(cursor.getColumnIndexOrThrow(EMP_TELEFONO)) ?: "",
+                        correo = cursor.getString(cursor.getColumnIndexOrThrow(EMP_CORREO)) ?: "",
                         nombreInstalacion = cursor.getString(cursor.getColumnIndexOrThrow(INST_NOMBRE)),
-                        ubicacion = cursor.getString(cursor.getColumnIndexOrThrow(INST_UBICACION)),
-                        comuna = cursor.getString(cursor.getColumnIndexOrThrow(INST_COMUNA)),
-                        region = cursor.getString(cursor.getColumnIndexOrThrow(INST_REGION))
+                        ubicacion = cursor.getString(cursor.getColumnIndexOrThrow(INST_UBICACION)) ?: "",
+                        comuna = cursor.getString(cursor.getColumnIndexOrThrow(INST_COMUNA)) ?: "",
+                        region = cursor.getString(cursor.getColumnIndexOrThrow(INST_REGION)) ?: ""
                     )
                 )
             }
         }
         return lista
     }
-    fun eliminarCliente(id: Long): Int {
-        return writableDatabase.delete(TABLA_CLIENTES, "$CLI_ID = ?", arrayOf(id.toString()))
+    fun eliminarEmpresa(id: Long): Int {
+        return writableDatabase.delete(TABLA_EMPRESAS_CLIENTES, "$EMP_ID = ?", arrayOf(id.toString()))
     }
 
     //----------------- EQUIPOS Y PROTOCOLOS -----------------//
@@ -404,22 +411,37 @@ class InduztekDbHelper(context: Context) :
         val idxFoto = cursor.getColumnIndex(USU_FOTO_PERFIL)
         val fotoPath = if (idxFoto != -1 && !cursor.isNull(idxFoto)) cursor.getString(idxFoto) else null
 
+        val idxEmpresaId = cursor.getColumnIndex(USU_EMPRESA_ID_FK)
+        val empresaId = if (idxEmpresaId != -1 && !cursor.isNull(idxEmpresaId)) cursor.getLong(idxEmpresaId) else null
+
+        val idxEmpresaNombre = cursor.getColumnIndex("nombre_empresa")
+        val empresaNombre = if (idxEmpresaNombre != -1 && !cursor.isNull(idxEmpresaNombre)) cursor.getString(idxEmpresaNombre) else null
+
+        val idxTipoPregunta = cursor.getColumnIndex(USU_TIPO_PREGUNTA)
+        val tipoPregunta = if (idxTipoPregunta != -1 && !cursor.isNull(idxTipoPregunta)) cursor.getInt(idxTipoPregunta) else 0
+
+        val idxRespPregunta = cursor.getColumnIndex(USU_RESPUESTA_PREGUNTA)
+        val respPregunta = if (idxRespPregunta != -1 && !cursor.isNull(idxRespPregunta)) cursor.getString(idxRespPregunta) ?: "" else ""
+
         return Usuario(
+            id = cursor.getLong(cursor.getColumnIndexOrThrow(USU_ID)),
             nombre = cursor.getString(cursor.getColumnIndexOrThrow(USU_NOMBRE)),
             correo = cursor.getString(cursor.getColumnIndexOrThrow(USU_CORREO)),
             contrasena = cursor.getString(cursor.getColumnIndexOrThrow(USU_CONTRASENA)),
-            id = cursor.getLong(cursor.getColumnIndexOrThrow(USU_ID)),
             rolId = cursor.getLong(cursor.getColumnIndexOrThrow(USU_ROL)),
             rolNombre = cursor.getString(cursor.getColumnIndexOrThrow(ROL_NOMBRE)),
-            empresaCliente = cursor.getString(cursor.getColumnIndexOrThrow(USU_EMPRESA)),
+            tipoPreguntaClave = tipoPregunta,
+            respuestaPreguntaClave = respPregunta,
+            empresaId = empresaId,
+            empresaNombre = empresaNombre,
             fotoPerfilPath = fotoPath
         )
     }
 }
 
-// Data class necesaria para la función listarClientes()
-data class ClienteConInstalacion(
-    val idCliente: Long,
+// Data class para listar empresas junto con sus instalaciones
+data class EmpresaConInstalacion(
+    val idEmpresa: Long,
     val razonSocial: String,
     val rut: String,
     val giro: String,

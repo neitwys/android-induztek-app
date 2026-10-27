@@ -34,7 +34,6 @@ fun AppNavegacion(
 
     var usuarioActual by remember { mutableStateOf<Usuario?>(null) }
 
-    // 1. Cargar usuario guardado al iniciar la app usando sesionPrefs.leer()
     val idUsuarioGuardado = sesionPrefs.leer()
     val destinoInicial = if (idUsuarioGuardado != -1L) {
         usuarioActual = dbHelper.buscarPorId(idUsuarioGuardado)

@@ -7,6 +7,9 @@ data class Usuario(
     val contrasena: String,
     val rolId: Long,
     val rolNombre: String = "",
-    val empresaCliente: String? = null,
-    val fotoPerfilPath: String? = null // <- Asegúrate de tener esta línea
+    val tipoPreguntaClave: Int,
+    val respuestaPreguntaClave: String,
+    val empresaId: Long? = null,
+    val empresaNombre: String? = null,
+    val fotoPerfilPath: String? = null
 )

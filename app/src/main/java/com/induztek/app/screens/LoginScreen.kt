@@ -39,6 +39,15 @@ import com.induztek.app.ui.theme.Dimens
 import com.induztek.app.ui.theme.InduztekAppTheme
 import com.induztek.app.viewmodel.LoginViewModel
 
+//imp emer
+
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+
 @Composable
 fun LoginScreen(
     viewModel: LoginViewModel = viewModel(),
@@ -67,6 +76,8 @@ fun LoginContent(
     onIngresar: () -> Unit,
     onNavegarRecuperarContrasena: () -> Unit = {}
 ) {
+    var mostrarEmergente by remember { mutableStateOf(false) }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -136,56 +147,50 @@ fun LoginContent(
                     onClick = onIngresar,
                     modifier = Modifier.fillMaxWidth()
                 )
-
-                CredencialesPrueba()
+                TextButton(
+                    onClick = { mostrarEmergente = true },
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                ) {
+                    Text("Ver información del sistema")
+                }
 
                 Spacer(modifier = Modifier.height(Dimens.espacioGrande))
             }
         }
     }
-}
+    if (mostrarEmergente) {
+        AlertDialog(
 
-@Composable
-private fun CredencialesPrueba() {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = Dimens.espacioMedio),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
+            onDismissRequest = { mostrarEmergente = false },
+            title = {
+                Text("Información de la App")
+            },
+            text = {
+                Text("Aplicación Induztek v1.0\nDesarrollada para el control y gestión de protocolos de pruebas técnicas en terreno.")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = { mostrarEmergente = false }
+                ) {
+                    Text("Aceptar")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { mostrarEmergente = false }
+                ) {
+                    Text("Cerrar")
+                }
+            }
         )
-    ) {
-        Column(
-            modifier = Modifier.padding(Dimens.espacioMedio),
-            verticalArrangement = Arrangement.spacedBy(Dimens.espacioChico)
-        ) {
-            Text(
-                text = "Credenciales de Prueba (Testing)",
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            HorizontalDivider()
-
-            Text(
-                text = "1. Técnico: mgodoy@induztek.ejemplo | Pass: 123456789",
-                style = MaterialTheme.typography.bodySmall
-            )
-            Text(
-                text = "2. Ingeniero: acontreras@induztek.ejemplo | Pass: 987654321",
-                style = MaterialTheme.typography.bodySmall
-            )
-            Text(
-                text = "3. Jefe Técnico: respinoza@induztek.ejemplo | Pass: 135792468",
-                style = MaterialTheme.typography.bodySmall
-            )
-            Text(
-                text = "4. Cliente: mfuentes@envpacifico.ejemplo | Pass: 246813579",
-                style = MaterialTheme.typography.bodySmall
-            )
-        }
     }
 }
+
+//--------- CREDENCIALES -------------
+//1. Técnico: mgodoy@induztek.ejemplo | Pass: 123456789
+//2. Ingeniero: acontreras@induztek.ejemplo | Pass: 987654321
+//3. Jefe Técnico: respinoza@induztek.ejemplo | Pass: 135792468
+//4. Cliente: mfuentes@envpacifico.ejemplo | Pass: 246813579
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable

@@ -5,7 +5,7 @@ import androidx.core.content.edit
 
 class SesionPreferencias(context: Context) {
 
-    // Abre el archivo "sesion.xml" de forma privada (solo accesible por la app)
+
     private val prefs = context.getSharedPreferences("sesion", Context.MODE_PRIVATE)
 
     companion object {
@@ -14,12 +14,12 @@ class SesionPreferencias(context: Context) {
         private const val SIN_SESION = -1L
     }
 
-    // Guarda el ID del usuario cuando hace un Login exitoso
+
     fun guardar(idUsuario: Long) {
         prefs.edit { putLong(CLAVE_ID_USUARIO, idUsuario) }
     }
 
-    // Lee el ID guardado. Si devuelve -1L, significa que nadie ha iniciado sesión.
+
     fun leer(): Long = prefs.getLong(CLAVE_ID_USUARIO, SIN_SESION)
 
     // Borra el ID guardado (se usa cuando el usuario presiona "Cerrar Sesión")
@@ -27,14 +27,12 @@ class SesionPreferencias(context: Context) {
         prefs.edit { remove(CLAVE_ID_USUARIO) }
     }
 
-    // --- GESTIÓN DE TEMA (MODO CLARO / OSCURO / SISTEMA) ---
 
-    // Guarda el modo elegido: "CLARO", "OSCURO" o "SISTEMA"
     fun guardarModoTema(modo: String) {
         prefs.edit { putString(CLAVE_MODO_TEMA, modo) }
     }
 
-    // Lee el modo guardado. Si no hay ninguno, por defecto devuelve "SISTEMA"
+
     fun obtenerModoTema(): String {
         return prefs.getString(CLAVE_MODO_TEMA, "SISTEMA") ?: "SISTEMA"
     }
