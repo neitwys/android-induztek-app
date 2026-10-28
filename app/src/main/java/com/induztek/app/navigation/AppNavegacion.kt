@@ -14,7 +14,6 @@ import androidx.navigation.navArgument
 import com.induztek.app.data.InduztekDbHelper
 import com.induztek.app.data.SesionPreferencias
 import com.induztek.app.model.Usuario
-import com.induztek.app.screens.ClientesScreen
 import com.induztek.app.screens.HistorialEquiposScreen
 import com.induztek.app.screens.LoginScreen
 import com.induztek.app.screens.MenuPrincipalScreen
@@ -23,6 +22,7 @@ import com.induztek.app.screens.RecuperarContrasenaScreen
 import com.induztek.app.screens.RegistroEmpresaScreen
 import com.induztek.app.screens.RegistroPruebaScreen
 import com.induztek.app.screens.RegistroUsuarioEmpresaScreen
+import com.induztek.app.screens.ListaYEliminarEmpresasScreen
 import com.induztek.app.ui.theme.ModoTema
 
 @Composable
@@ -80,7 +80,7 @@ fun AppNavegacion(
                 onCambiarTema = onCambiarTema,
                 onNavegarPerfil = { navController.navigate(Ruta.Perfil.ruta) },
                 onNavegarRegistroCliente = { navController.navigate(Ruta.RegistroEmpresa.ruta) },
-                onNavegarListaClientes = { navController.navigate(Ruta.Clientes.ruta) },
+                onNavegarListaYEliminarEmpresas = { navController.navigate(Ruta.ListaYEliminarEmpresas.ruta) },
                 onNavegarRegistroPrueba = { navController.navigate(Ruta.RegistroPrueba.ruta) },
                 onNavegarHistorialEquipos = { navController.navigate(Ruta.HistorialEquipos.ruta) },
                 onCerrarSesion = {
@@ -118,9 +118,9 @@ fun AppNavegacion(
             )
         }
 
-        // 5. Lista Clientes
-        composable(Ruta.Clientes.ruta) {
-            ClientesScreen(
+        // 5. Lista y eliminar Empresas
+        composable(Ruta.ListaYEliminarEmpresas.ruta) {
+            ListaYEliminarEmpresasScreen(
                 onVolver = { navController.popBackStack() }
             )
         }

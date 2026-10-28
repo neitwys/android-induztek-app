@@ -29,21 +29,21 @@ import androidx.compose.ui.res.painterResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.induztek.app.R
-import com.induztek.app.data.ClienteConInstalacion
+import com.induztek.app.data.EmpresaConInstalacion
 import com.induztek.app.ui.components.CampoTexto
 import com.induztek.app.ui.theme.Dimens
-import com.induztek.app.viewmodel.ClientesViewModel
+import com.induztek.app.viewmodel.ListaYEliminarEmpresasViewModel
 
 @Composable
-fun ClientesScreen(
-    viewModel: ClientesViewModel = viewModel(),
+fun ListaYEliminarEmpresasScreen(
+    viewModel: ListaYEliminarEmpresasViewModel = viewModel(),
     onVolver: () -> Unit
 ) {
-    val clientes by viewModel.clientes.collectAsStateWithLifecycle()
+    val empresas by viewModel.empresas.collectAsStateWithLifecycle()
     val filtro by viewModel.filtro.collectAsStateWithLifecycle()
 
-    ClientesContent(
-        clientes = clientes,
+    ListaYEliminarEmpresasContent(
+        empresas = empresas,
         onVolver = onVolver,
         filtro = filtro,
         onBuscar = viewModel::buscar,
@@ -53,23 +53,23 @@ fun ClientesScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ClientesContent(
-    clientes: List<ClienteConInstalacion>,
+fun ListaYEliminarEmpresasContent(
+    empresas: List<EmpresaConInstalacion>,
     onVolver: () -> Unit,
     filtro: String = "",
     onBuscar: (String) -> Unit = {},
-    onEliminar: (ClienteConInstalacion) -> Unit = {}
+    onEliminar: (EmpresaConInstalacion) -> Unit = {}
 ) {
-    var porEliminar by remember { mutableStateOf<ClienteConInstalacion?>(null) }
+    var porEliminar by remember { mutableStateOf<EmpresaConInstalacion?>(null) }
 
-    porEliminar?.let { cliente ->
+    porEliminar?.let { empresa ->
         AlertDialog(
             onDismissRequest = { porEliminar = null },
-            title = { Text("Eliminar Cliente") },
-            text = { Text("¿Estás seguro de eliminar a ${cliente.razonSocial} y su instalación asociada?") },
+            title = { Text("Eliminar Empresa") },
+            text = { Text("¿Estás seguro de eliminar a ${empresa.razonSocial} y su instalación asociada?") },
             confirmButton = {
                 TextButton(onClick = {
-                    onEliminar(cliente)
+                    onEliminar(empresa)
                     porEliminar = null
                 }) { Text("Eliminar") }
             },
@@ -84,7 +84,7 @@ fun ClientesContent(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Listado de Clientes e Instalaciones") },
+                title = { Text("Listado de Empresas e Instalaciones") },
                 navigationIcon = {
                     IconButton(onClick = onVolver) {
                         Icon(
@@ -109,7 +109,7 @@ fun ClientesContent(
             CampoTexto(
                 valor = filtro,
                 onValorCambia = onBuscar,
-                etiqueta = "Buscar cliente...",
+                etiqueta = "Buscar empresa...",
                 icono = R.drawable.ic_buscar,
                 modifier = Modifier.padding(
                     horizontal = Dimens.espacioMedio,
@@ -117,9 +117,9 @@ fun ClientesContent(
                 )
             )
 
-            if (clientes.isEmpty()) {
+            if (empresas.isEmpty()) {
                 Text(
-                    text = "No hay clientes registrados en el sistema.",
+                    text = "No hay empresas registradas en el sistema.",
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(Dimens.espacioMedio)
                 )
@@ -130,20 +130,20 @@ fun ClientesContent(
                 contentPadding = PaddingValues(Dimens.espacioMedio),
                 verticalArrangement = Arrangement.spacedBy(Dimens.espacioChico)
             ) {
-                items(clientes, key = { it.idCliente }) { cliente ->
+                items(empresas, key = { it.idEmpresa }) { empresa ->
                     Card {
                         ListItem(
-                            overlineContent = { Text("RUT: ${cliente.rut} | Giro: ${cliente.giro}") },
+                            overlineContent = { Text("RUT: ${empresa.rut} | Giro: ${empresa.giro}") },
                             leadingContent = {
                                 Icon(
                                     painterResource(R.drawable.ic_giro),
                                     contentDescription = null
                                 )
                             },
-                            headlineContent = { Text(cliente.razonSocial) },
-                            supportingContent = { Text("Instalación: ${cliente.nombreInstalacion} (${cliente.comuna})") },
+                            headlineContent = { Text(empresa.razonSocial) },
+                            supportingContent = { Text("Instalación: ${empresa.nombreInstalacion} (${empresa.comuna})") },
                             trailingContent = {
-                                IconButton(onClick = { porEliminar = cliente }) {
+                                IconButton(onClick = { porEliminar = empresa }) {
                                     Icon(
                                         painter = painterResource(R.drawable.ic_eliminar),
                                         contentDescription = "Eliminar",

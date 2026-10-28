@@ -266,8 +266,8 @@ fun PerfilScreen(
                     )
 
                     ItemInfoPerfil(
-                        etiqueta = "Empresa / Cliente",
-                        valor = usuarioActual?.empresaCliente ?: "Induztek Servicios Industriales",
+                        etiqueta = "Empresa / Representante de la Empresa",
+                        valor = usuarioActual?.empresaNombre ?: "Induztek Servicios Industriales",
                         iconoRes = R.drawable.ic_instalacion
                     )
                 }

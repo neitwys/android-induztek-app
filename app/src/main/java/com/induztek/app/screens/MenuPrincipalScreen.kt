@@ -51,7 +51,7 @@ fun MenuPrincipalScreen(
     viewModel: MenuPrincipalViewModel = viewModel(),
     onNavegarPerfil: () -> Unit = {},
     onNavegarRegistroCliente: () -> Unit,
-    onNavegarListaClientes: () -> Unit,
+    onNavegarListaYEliminarEmpresas: () -> Unit,
     onNavegarRegistroPrueba: () -> Unit = {},
     onNavegarHistorialEquipos: () -> Unit = {},
     onCerrarSesion: () -> Unit = {}
@@ -67,7 +67,7 @@ fun MenuPrincipalScreen(
         onCambiarTema = onCambiarTema,
         onNavegarPerfil = onNavegarPerfil,
         onNavegarRegistroCliente = onNavegarRegistroCliente,
-        onNavegarListaClientes = onNavegarListaClientes,
+        onNavegarListaYEliminarEmpresas = onNavegarListaYEliminarEmpresas,
         onNavegarRegistroPrueba = onNavegarRegistroPrueba,
         onNavegarHistorialEquipos = onNavegarHistorialEquipos,
         onCerrarSesion = onCerrarSesion
@@ -82,7 +82,7 @@ fun MenuPrincipalContent(
     onCambiarTema: (ModoTema) -> Unit = {},
     onNavegarPerfil: () -> Unit = {},
     onNavegarRegistroCliente: () -> Unit,
-    onNavegarListaClientes: () -> Unit,
+    onNavegarListaYEliminarEmpresas: () -> Unit,
     onNavegarRegistroPrueba: () -> Unit = {},
     onNavegarHistorialEquipos: () -> Unit = {},
     onCerrarSesion: () -> Unit = {}
@@ -116,11 +116,11 @@ fun MenuPrincipalContent(
                     )
 
                     ListItem(
-                        headlineContent = { Text("Listado de Clientes") },
+                        headlineContent = { Text("Listado de Empresas") },
                         leadingContent = { Icon(painter = painterResource(R.drawable.ic_giro), contentDescription = null) },
                         modifier = Modifier.clickable {
                             scope.launch { drawerState.close() }
-                            onNavegarListaClientes()
+                            onNavegarListaYEliminarEmpresas()
                         }
                     )
 
