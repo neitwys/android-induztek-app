@@ -214,6 +214,38 @@ class InduztekDbHelper(context: Context) :
         return filas > 0
     }
 
+    fun insertarUsuario(
+        nombre: String,
+        correo: String,
+        contrasena: String,
+        tipoPregunta: Int,
+        respuestaPregunta: String,
+        rolId: Int,
+        empresaId: Long? = null // Es opcional, por defecto es null si no se envía
+    ): Boolean {
+        val db = this.writableDatabase
+        val valores = ContentValues().apply {
+            put(USU_NOMBRE, nombre) // Usa tus constantes como USU_NOMBRE
+            put(USU_CORREO, correo)
+            put(USU_CONTRASENA, contrasena)
+            put(USU_TIPO_PREGUNTA, tipoPregunta)
+            put(USU_RESPUESTA_PREGUNTA, respuestaPregunta.trim().lowercase())
+            put(USU_ROL, rolId)
+
+            // Por si el usuario que se registre sea un Representante de Empresa
+            if (empresaId != null) {
+                put(USU_EMPRESA_ID_FK, empresaId)
+            } else {
+                putNull(USU_EMPRESA_ID_FK)
+            }
+        }
+
+        val resultado = db.insert(TABLA_USUARIOS, null, valores)
+        db.close()
+
+        return resultado != -1L
+    }
+
     fun autenticarUsuario(correo: String, contrasenaPlana: String): Usuario? {
         val claveHash = SeguridadUtils.hashSHA256(contrasenaPlana.trim())
         val sql = "$SQL_SELECT_USUARIOS WHERE u.$USU_CORREO = ? AND u.$USU_CONTRASENA = ?"
@@ -245,7 +277,8 @@ class InduztekDbHelper(context: Context) :
     fun insertarEmpresaConInstalacion(
         razonSocial: String, rut: String, giro: String, contacto: String, telefono: String, correo: String,
         nombreInstalacion: String, ubicacion: String, comuna: String, region: String, observaciones: String
-    ): Boolean {
+    ): Long //Diras, porque un long? porque retornara la empresaId para la siguiente pantalla, si falla es un -1L
+    {
         val db = writableDatabase
         db.beginTransaction()
         try {
@@ -258,7 +291,7 @@ class InduztekDbHelper(context: Context) :
                 put(EMP_CORREO, correo)
             }
             val idEmpresaGenerada = db.insert(TABLA_EMPRESAS_CLIENTES, null, valoresEmpresa)
-            if (idEmpresaGenerada == -1L) return false
+            if (idEmpresaGenerada == -1L) return -1L
 
             val valoresInstalacion = ContentValues().apply {
                 put(INST_NOMBRE, nombreInstalacion)
@@ -269,12 +302,12 @@ class InduztekDbHelper(context: Context) :
                 put(INST_EMPRESA_ID_FK, idEmpresaGenerada)
             }
             val idInstalacionGenerada = db.insert(TABLA_INSTALACIONES, null, valoresInstalacion)
-            if (idInstalacionGenerada == -1L) return false
+            if (idInstalacionGenerada == -1L) return -1L
 
             db.setTransactionSuccessful()
-            return true
+            return idEmpresaGenerada
         } catch (e: Exception) {
-            return false
+            return -1L
         } finally {
             db.endTransaction()
         }

@@ -7,7 +7,10 @@ sealed class Ruta(val ruta: String) {
     data object MenuPrincipal : Ruta("menu_principal")
 
     data object Perfil : Ruta("perfil")
-    data object RegistroCliente : Ruta("registro_cliente")
+    data object RegistroEmpresa : Ruta("registro_empresa")
+    data object RegistroUsuarioEmpresa : Ruta("registro_usuario_empresa/{empresaId}") {
+        fun crearRuta(empresaId: Long): String = "registro_usuario_empresa/$empresaId"
+    }
     data object Clientes : Ruta("clientes")
     object RegistroPrueba : Ruta("registro_prueba")
     object HistorialEquipos : Ruta("historial_equipos")

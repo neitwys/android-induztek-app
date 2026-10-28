@@ -1,7 +1,7 @@
 package com.induztek.app.model
 
-data class RegistroClienteUiState(
-    // Datos del Cliente
+data class RegistroEmpresaUiState(
+    // Datos de la Empresa
     val razonSocial: String = "",
     val rut: String = "",
     val giro: String = "", //Esto se refiere a que se especializa, Minería, Salud, etc.
@@ -31,5 +31,6 @@ data class RegistroClienteUiState(
     val errorObservacionesAcceso: String? = null,
 
     // Resultado del formulario
+    val idEmpresaGenerado: Long? = null,
     val registroExitoso: Boolean = false
 )

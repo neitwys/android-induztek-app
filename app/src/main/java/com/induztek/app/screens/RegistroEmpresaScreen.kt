@@ -31,7 +31,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.induztek.app.R
-import com.induztek.app.model.RegistroClienteUiState
+import com.induztek.app.model.RegistroEmpresaUiState
 import com.induztek.app.ui.components.BotonPrincipal
 import com.induztek.app.ui.components.BotonSecundario
 import com.induztek.app.ui.components.CampoTexto
@@ -39,18 +39,19 @@ import com.induztek.app.ui.components.TarjetaSeccion
 import com.induztek.app.ui.theme.Dimens
 import com.induztek.app.ui.theme.Exito
 import com.induztek.app.ui.theme.ExitoFondo
-import com.induztek.app.viewmodel.RegistroClienteViewModel
+import com.induztek.app.viewmodel.RegistroEmpresaViewModel
 
 
 // 3. Constructor
 @Composable
-fun RegistroClienteScreen(
-    viewModel: RegistroClienteViewModel = viewModel(),
+fun RegistroEmpresaScreen(
+    viewModel: RegistroEmpresaViewModel = viewModel(),
+    onNavegarARegistroUsuario: (Long) -> Unit,
     onVolver: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    RegistroClienteContent(
+    RegistroEmpresaContent(
         uiState = uiState,
         onRazonSocialCambia = viewModel::onRazonSocialCambia,
         onRutCambia = viewModel::onRutCambia,
@@ -72,8 +73,8 @@ fun RegistroClienteScreen(
 // 1. Contenido
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RegistroClienteContent(
-    uiState: RegistroClienteUiState,
+fun RegistroEmpresaContent(
+    uiState: RegistroEmpresaUiState,
     onRazonSocialCambia: (String) -> Unit,
     onRutCambia: (String) -> Unit,
     onGiroCambia: (String) -> Unit,
@@ -281,7 +282,7 @@ private fun MensajeExitoRegistro(nombre: String) {
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun RegistroClienteContentPreview() {
-    val estadoSimulado = RegistroClienteUiState(
+    val estadoSimulado = RegistroEmpresaUiState(
         razonSocial = "Envasadora del Pacífico SpA",
         rut = "76.543.210-9",
         giro = "Industrial / Eléctrico",
@@ -295,7 +296,7 @@ fun RegistroClienteContentPreview() {
         observacionesAcceso = "Requiere inducción de seguridad previa"
     )
 
-    RegistroClienteContent(
+    RegistroEmpresaContent(
         uiState = estadoSimulado,
         onRazonSocialCambia = {},
         onRutCambia = {},

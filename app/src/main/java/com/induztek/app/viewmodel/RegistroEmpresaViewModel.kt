@@ -3,23 +3,22 @@ package com.induztek.app.viewmodel
 import android.app.Application
 import android.util.Patterns
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.ViewModel
 import com.induztek.app.data.InduztekDbHelper
-import com.induztek.app.model.RegistroClienteUiState
+import com.induztek.app.model.RegistroEmpresaUiState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
 //Aqui tambien cambiamos al AndroidViewModel porque usa las base de datos.
-class RegistroClienteViewModel(application: Application): AndroidViewModel(application) {
+class RegistroEmpresaViewModel(application: Application): AndroidViewModel(application) {
     private val dbHelper = InduztekDbHelper(application)
-    private val _uiState = MutableStateFlow(RegistroClienteUiState())
-    val uiState: StateFlow<RegistroClienteUiState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow(RegistroEmpresaUiState())
+    val uiState: StateFlow<RegistroEmpresaUiState> = _uiState.asStateFlow()
 
     // Eventos de los campos
 
-    // Eventos del Cliente
+    // Eventos de la Empresa
     fun onRazonSocialCambia(valor: String) {
         _uiState.update { it.copy(razonSocial = valor, errorRazonSocial = null, registroExitoso = false) }
     }
@@ -67,6 +66,7 @@ class RegistroClienteViewModel(application: Application): AndroidViewModel(appli
     private fun validarContacto(contacto: String): String? {
         return if (contacto.isBlank()) "El nombre de contacto es obligatorio" else null
     }
+
     private fun validarCorreo(correo: String): String? {
         if (correo.isBlank()) return null
         val esValido = Patterns.EMAIL_ADDRESS.matcher(correo).matches()
@@ -80,7 +80,7 @@ class RegistroClienteViewModel(application: Application): AndroidViewModel(appli
 
     // Botón limpiar
     fun onLimpiar() {
-        _uiState.value = RegistroClienteUiState()
+        _uiState.value = RegistroEmpresaUiState()
     }
 
     // Botón registrarse
@@ -114,7 +114,7 @@ class RegistroClienteViewModel(application: Application): AndroidViewModel(appli
         }
 
         //Si pasa las validaciones, guardamos en la base de datos.
-        val exitoDb = dbHelper.insertarClienteConInstalacion(
+        val idGenerado = dbHelper.insertarEmpresaConInstalacion(
             razonSocial = estado.razonSocial,
             rut = estado.rut,
             giro = estado.giro,
@@ -128,15 +128,21 @@ class RegistroClienteViewModel(application: Application): AndroidViewModel(appli
             observaciones = estado.observacionesAcceso
         )
 
-
-        _uiState.update { it.copy(
-            errorRazonSocial = errorRazonSocial,
-            errorRut = errorRut,
-            errorCorreo = errorCorreo,
-            errorContacto = errorContacto,
-            errorNombreInstalacion = errorNombreInstalacion,
-            registroExitoso = exitoDb
-        ) }
+        if (idGenerado != -1L) {
+            // Se guardó con éxito: asignamos el ID al UiState para que LaunchedEffect gatille la navegación
+            _uiState.update { it.copy(
+                idEmpresaGenerado = idGenerado,
+                registroExitoso = true
+            ) }
+        } else {
+            // Si falló (por ejemplo, el RUT ya está registrado por la restricción UNIQUE)
+            _uiState.update {
+                it.copy(
+                    errorRut = "El RUT ya se encuentra registrado",
+                    registroExitoso = false
+                )
+            }
+        }
     }
 
 

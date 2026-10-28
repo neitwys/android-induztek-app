@@ -6,9 +6,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.induztek.app.data.InduztekDbHelper
 import com.induztek.app.data.SesionPreferencias
 import com.induztek.app.model.Usuario
@@ -18,8 +20,9 @@ import com.induztek.app.screens.LoginScreen
 import com.induztek.app.screens.MenuPrincipalScreen
 import com.induztek.app.screens.PerfilScreen
 import com.induztek.app.screens.RecuperarContrasenaScreen
-import com.induztek.app.screens.RegistroClienteScreen
+import com.induztek.app.screens.RegistroEmpresaScreen
 import com.induztek.app.screens.RegistroPruebaScreen
+import com.induztek.app.screens.RegistroUsuarioEmpresaScreen
 import com.induztek.app.ui.theme.ModoTema
 
 @Composable
@@ -76,7 +79,7 @@ fun AppNavegacion(
                 modoTemaActual = modoTemaActual,
                 onCambiarTema = onCambiarTema,
                 onNavegarPerfil = { navController.navigate(Ruta.Perfil.ruta) },
-                onNavegarRegistroCliente = { navController.navigate(Ruta.RegistroCliente.ruta) },
+                onNavegarRegistroCliente = { navController.navigate(Ruta.RegistroEmpresa.ruta) },
                 onNavegarListaClientes = { navController.navigate(Ruta.Clientes.ruta) },
                 onNavegarRegistroPrueba = { navController.navigate(Ruta.RegistroPrueba.ruta) },
                 onNavegarHistorialEquipos = { navController.navigate(Ruta.HistorialEquipos.ruta) },
@@ -90,9 +93,27 @@ fun AppNavegacion(
             )
         }
 
-        // 4. Registro Clientes
-        composable(Ruta.RegistroCliente.ruta) {
-            RegistroClienteScreen(
+        // 4. Registro Empresa
+        composable(Ruta.RegistroEmpresa.ruta) {
+            RegistroEmpresaScreen(
+                onNavegarARegistroUsuario = { idGenerado ->
+                    navController.navigate(Ruta.RegistroUsuarioEmpresa.crearRuta(idGenerado)) {
+                        popUpTo(Ruta.RegistroEmpresa.ruta) { inclusive = true }
+                    }
+                },
+                onVolver = { navController.popBackStack() }
+            )
+        }
+
+        // 4.1 Registro Representante de la Empresa
+        composable(
+            route = Ruta.RegistroUsuarioEmpresa.ruta,
+            arguments = listOf(navArgument("empresaId") { type = NavType.LongType })
+        ) { backStackEntry ->
+            val idEmpresa = backStackEntry.arguments?.getLong("empresaId") ?: 0L
+
+            RegistroUsuarioEmpresaScreen(
+                empresaId = idEmpresa,
                 onVolver = { navController.popBackStack() }
             )
         }
