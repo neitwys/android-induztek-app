@@ -1,5 +1,8 @@
 package com.induztek.app.screens
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -25,13 +28,13 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -39,16 +42,20 @@ import coil.compose.AsyncImage
 import com.induztek.app.R
 import com.induztek.app.model.ProtocoloPrueba
 import com.induztek.app.ui.theme.Dimens
-import com.induztek.app.ui.theme.InduztekAppTheme
 import com.induztek.app.viewmodel.HistorialEquiposViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HistorialEquiposScreen(
+    empresaIdFiltro: Long? = null,
     viewModel: HistorialEquiposViewModel = viewModel(),
     onVolver: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    LaunchedEffect(empresaIdFiltro) {
+        viewModel.configurarFiltroEmpresa(empresaIdFiltro)
+    }
 
     Scaffold(
         topBar = {
@@ -57,7 +64,7 @@ fun HistorialEquiposScreen(
                 navigationIcon = {
                     IconButton(onClick = onVolver) {
                         Icon(
-                            painter = painterResource(R.drawable.ic_salir),
+                            painter = painterResource(R.drawable.ic_volver),
                             contentDescription = "Volver"
                         )
                     }
@@ -78,7 +85,6 @@ fun HistorialEquiposScreen(
                 .padding(Dimens.espacioGrande),
             verticalArrangement = Arrangement.spacedBy(Dimens.espacioMedio)
         ) {
-            // Buscador por Código de Equipo
             OutlinedTextField(
                 value = uiState.busquedaCodigo,
                 onValueChange = { viewModel.onBusquedaCambia(it) },
@@ -87,10 +93,14 @@ fun HistorialEquiposScreen(
                 singleLine = true
             )
 
-            if (uiState.listaProtocolos.isEmpty()) {
+            AnimatedVisibility(
+                visible = uiState.listaProtocolos.isEmpty() && !uiState.cargando,
+                enter = fadeIn(),
+                exit = fadeOut()
+            ) {
                 Column(
                     modifier = Modifier
-                        .fillMaxSize()
+                        .fillMaxWidth()
                         .padding(top = 40.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
@@ -100,13 +110,21 @@ fun HistorialEquiposScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-            } else {
+            }
+
+            if (uiState.listaProtocolos.isNotEmpty()) {
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(Dimens.espacioMedio),
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    items(uiState.listaProtocolos) { protocolo ->
-                        TarjetaProtocoloItem(protocolo = protocolo)
+                    items(
+                        items = uiState.listaProtocolos,
+                        key = { it.idProtocolo }
+                    ) { protocolo ->
+                        TarjetaProtocoloItem(
+                            protocolo = protocolo,
+                            modifier = Modifier.animateItem()
+                        )
                     }
                 }
             }
@@ -115,11 +133,14 @@ fun HistorialEquiposScreen(
 }
 
 @Composable
-fun TarjetaProtocoloItem(protocolo: ProtocoloPrueba) {
+fun TarjetaProtocoloItem(
+    protocolo: ProtocoloPrueba,
+    modifier: Modifier = Modifier
+) {
     val esAprobado = protocolo.resultado == "APROBADO"
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant
         )
@@ -157,6 +178,10 @@ fun TarjetaProtocoloItem(protocolo: ProtocoloPrueba) {
                 color = MaterialTheme.colorScheme.primary
             )
             Text(
+                text = "Técnico: ${protocolo.nombreTecnico}",
+                style = MaterialTheme.typography.bodySmall
+            )
+            Text(
                 text = "Fecha/Hora: ${protocolo.fechaHora}",
                 style = MaterialTheme.typography.bodySmall
             )
@@ -173,7 +198,6 @@ fun TarjetaProtocoloItem(protocolo: ProtocoloPrueba) {
                 )
             }
 
-            // Muestra ubicación GPS si existe
             if (protocolo.latitud != null && protocolo.longitud != null) {
                 Text(
                     text = "Ubicación GPS: ${protocolo.latitud}, ${protocolo.longitud}",
@@ -182,7 +206,6 @@ fun TarjetaProtocoloItem(protocolo: ProtocoloPrueba) {
                 )
             }
 
-            // Muestra la imagen capturada si existe
             protocolo.fotoUri?.let { uriStr ->
                 Spacer(modifier = Modifier.height(4.dp))
                 AsyncImage(
@@ -198,4 +221,3 @@ fun TarjetaProtocoloItem(protocolo: ProtocoloPrueba) {
         }
     }
 }
-

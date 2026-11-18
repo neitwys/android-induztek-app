@@ -51,10 +51,12 @@ fun MenuPrincipalScreen(
     viewModel: MenuPrincipalViewModel = viewModel(),
     onNavegarPerfil: () -> Unit = {},
     onNavegarRegistroCliente: () -> Unit,
+    onNavegarRegistroUsuarioInterno: () -> Unit = {},
     onNavegarListaYEliminarEmpresas: () -> Unit,
     onNavegarRegistroPrueba: () -> Unit = {},
     onNavegarHistorialEquipos: () -> Unit = {},
-    onCerrarSesion: () -> Unit = {}
+    onCerrarSesion: () -> Unit = {},
+    onNavegarListaUsuarios: () -> Unit = {}
 ) {
     LaunchedEffect(usuario) {
         viewModel.cargarUsuario(usuario)
@@ -63,14 +65,18 @@ fun MenuPrincipalScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     MenuPrincipalContent(
         uiState = uiState,
+        rolId = usuario?.rolId ?: 0L,
         modoTemaActual = modoTemaActual,
         onCambiarTema = onCambiarTema,
         onNavegarPerfil = onNavegarPerfil,
         onNavegarRegistroCliente = onNavegarRegistroCliente,
+        onNavegarRegistroUsuarioInterno = onNavegarRegistroUsuarioInterno,
         onNavegarListaYEliminarEmpresas = onNavegarListaYEliminarEmpresas,
         onNavegarRegistroPrueba = onNavegarRegistroPrueba,
         onNavegarHistorialEquipos = onNavegarHistorialEquipos,
-        onCerrarSesion = onCerrarSesion
+        onCerrarSesion = onCerrarSesion,
+        onNavegarListaUsuarios = onNavegarListaUsuarios
+
     )
 }
 
@@ -78,17 +84,24 @@ fun MenuPrincipalScreen(
 @Composable
 fun MenuPrincipalContent(
     uiState: MenuPrincipalUiState,
+    rolId: Long = 1L,
     modoTemaActual: ModoTema = ModoTema.SISTEMA,
     onCambiarTema: (ModoTema) -> Unit = {},
     onNavegarPerfil: () -> Unit = {},
     onNavegarRegistroCliente: () -> Unit,
+    onNavegarRegistroUsuarioInterno: () -> Unit = {},
     onNavegarListaYEliminarEmpresas: () -> Unit,
     onNavegarRegistroPrueba: () -> Unit = {},
     onNavegarHistorialEquipos: () -> Unit = {},
-    onCerrarSesion: () -> Unit = {}
+    onCerrarSesion: () -> Unit = {},
+    onNavegarListaUsuarios: () -> Unit = {}
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
+
+    val esClienteExterno = rolId == 4L
+    val puedeGestionarEmpresas = rolId == 2L || rolId == 3L
+    val esJefeTecnico = rolId == 3L
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -115,23 +128,57 @@ fun MenuPrincipalContent(
                         }
                     )
 
-                    ListItem(
-                        headlineContent = { Text("Listado de Empresas") },
-                        leadingContent = { Icon(painter = painterResource(R.drawable.ic_giro), contentDescription = null) },
-                        modifier = Modifier.clickable {
-                            scope.launch { drawerState.close() }
-                            onNavegarListaYEliminarEmpresas()
-                        }
-                    )
+                    if (puedeGestionarEmpresas) {
+                        ListItem(
+                            headlineContent = { Text("Listado de Empresas") },
+                            leadingContent = { Icon(painter = painterResource(R.drawable.ic_giro), contentDescription = null) },
+                            modifier = Modifier.clickable {
+                                scope.launch { drawerState.close() }
+                                onNavegarListaYEliminarEmpresas()
+                            }
+                        )
+                    }
 
-                    ListItem(
-                        headlineContent = { Text("Registrar Prueba en Terreno") },
-                        leadingContent = { Icon(painter = painterResource(R.drawable.ic_giro), contentDescription = null) },
-                        modifier = Modifier.clickable {
-                            scope.launch { drawerState.close() }
-                            onNavegarRegistroPrueba()
-                        }
-                    )
+                    if (esJefeTecnico) {
+                        ListItem(
+                            headlineContent = { Text("Listado y Gestión de Usuarios") },
+                            leadingContent = {
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_person),
+                                    contentDescription = null
+                                )
+                            },
+                            modifier = Modifier.clickable {
+                                onNavegarListaUsuarios() // <-- 1. Navega primero instantáneamente
+                                scope.launch { drawerState.close() } // <-- 2. Cierra el menú en segundo plano
+                            }
+                        )
+                        ListItem(
+                            headlineContent = { Text("Registrar Usuario Interno") },
+                            leadingContent = {
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_person),
+                                    contentDescription = null
+                                )
+                            },
+                            modifier = Modifier.clickable {
+                                onNavegarRegistroUsuarioInterno()
+                                scope.launch { drawerState.close() }
+                            }
+                        )
+                    }
+
+
+                    if (!esClienteExterno) {
+                        ListItem(
+                            headlineContent = { Text("Registrar Prueba en Terreno") },
+                            leadingContent = { Icon(painter = painterResource(R.drawable.ic_giro), contentDescription = null) },
+                            modifier = Modifier.clickable {
+                                scope.launch { drawerState.close() }
+                                onNavegarRegistroPrueba()
+                            }
+                        )
+                    }
 
                     ListItem(
                         headlineContent = { Text("Historial de Equipos") },
@@ -148,18 +195,23 @@ fun MenuPrincipalContent(
 
                     ListItem(
                         headlineContent = { Text("Modo Claro") },
-                        leadingContent = { RadioButton(selected = modoTemaActual == ModoTema.CLARO, onClick = null) },
+                        leadingContent = {
+                            RadioButton(
+                                selected = modoTemaActual == ModoTema.CLARO,
+                                onClick = null
+                            )
+                        },
                         modifier = Modifier.clickable { onCambiarTema(ModoTema.CLARO) }
                     )
                     ListItem(
                         headlineContent = { Text("Modo Oscuro") },
-                        leadingContent = { RadioButton(selected = modoTemaActual == ModoTema.OSCURO, onClick = null) },
+                        leadingContent = {
+                            RadioButton(
+                                selected = modoTemaActual == ModoTema.OSCURO,
+                                onClick = null
+                            )
+                        },
                         modifier = Modifier.clickable { onCambiarTema(ModoTema.OSCURO) }
-                    )
-                    ListItem(
-                        headlineContent = { Text("Predeterminado del Sistema") },
-                        leadingContent = { RadioButton(selected = modoTemaActual == ModoTema.SISTEMA, onClick = null) },
-                        modifier = Modifier.clickable { onCambiarTema(ModoTema.SISTEMA) }
                     )
 
                     HorizontalDivider(modifier = Modifier.padding(vertical = Dimens.espacioChico))
@@ -225,34 +277,45 @@ fun MenuPrincipalContent(
                     style = MaterialTheme.typography.titleMedium
                 )
 
-                TarjetaSeccion(titulo = "Módulo Clientes") {
-                    Column(verticalArrangement = Arrangement.spacedBy(Dimens.espacioChico)) {
-                        Text("Gestión de Clientes e Instalaciones", style = MaterialTheme.typography.bodyLarge)
-                        Button(
-                            onClick = onNavegarRegistroCliente,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text("Registrar Nuevo Cliente")
+                if (puedeGestionarEmpresas) {
+                    TarjetaSeccion(titulo = "Módulo Clientes") {
+                        Column(verticalArrangement = Arrangement.spacedBy(Dimens.espacioChico)) {
+                            Text("Gestión de Clientes e Instalaciones", style = MaterialTheme.typography.bodyLarge)
+                            Button(
+                                onClick = onNavegarRegistroCliente,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("Registrar Nueva Empresa")
+                            }
                         }
                     }
                 }
 
                 TarjetaSeccion(titulo = "Módulo Pruebas en Terreno (Induztek)") {
                     Column(verticalArrangement = Arrangement.spacedBy(Dimens.espacioChico)) {
-                        Text("Protocolos y Certificaciones", style = MaterialTheme.typography.bodyLarge)
+                        Text(
+                            text = if (esClienteExterno) {
+                                "Consulta de Protocolos e Historial"
+                            } else {
+                                "Protocolos y Certificaciones"
+                            },
+                            style = MaterialTheme.typography.bodyLarge
+                        )
 
-                        Button(
-                            onClick = onNavegarRegistroPrueba,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text("Registrar Prueba (Cámara & GPS)")
+                        if (!esClienteExterno) {
+                            Button(
+                                onClick = onNavegarRegistroPrueba,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("Registrar Prueba (Cámara & GPS)")
+                            }
                         }
 
                         OutlinedButton(
                             onClick = onNavegarHistorialEquipos,
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text(" Consultar Historial de Equipos")
+                            Text("Consultar Historial de Equipos")
                         }
                     }
                 }

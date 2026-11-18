@@ -3,69 +3,82 @@ package com.induztek.app.viewmodel
 import android.app.Application
 import android.util.Patterns
 import androidx.lifecycle.AndroidViewModel
-import com.induztek.app.data.InduztekDbHelper
+import com.induztek.app.data.repository.LocalUsuarioRepository
+import com.induztek.app.data.repository.UsuarioRepository
 import com.induztek.app.model.RegistroUsuarioEmpresaUiState
-import com.induztek.app.utils.SeguridadUtils
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
-class RegistroUsuarioEmpresaViewModel(application: Application): AndroidViewModel(application) {
-    private val dbHelper = InduztekDbHelper(application)
+class RegistroUsuarioEmpresaViewModel(
+    application: Application,
+    private val usuarioRepository: UsuarioRepository
+) : AndroidViewModel(application) {
+
+    constructor(application: Application) : this(
+        application = application,
+        usuarioRepository = LocalUsuarioRepository(application)
+    )
+
     private val _uiState = MutableStateFlow(RegistroUsuarioEmpresaUiState())
     val uiState: StateFlow<RegistroUsuarioEmpresaUiState> = _uiState.asStateFlow()
 
-    //Eventos de los campos
-        //Este para pasar el id de la empresa que se registró en la pantalla anterior, para que el representante quede asociado a esa empresa.
     fun inicializarEmpresaId(empresaId: Long) {
-        _uiState.update { it.copy(empresaId = empresaId) }
+        val rolPorDefecto = if (empresaId > 0L) 4 else 1
+        _uiState.update { it.copy(empresaId = empresaId, rolIdSeleccionado = rolPorDefecto) }
     }
 
-    //Eventos del Representate de la Empresa
+    fun onRolCambia(nuevoRolId: Int) {
+        _uiState.update { it.copy(rolIdSeleccionado = nuevoRolId, registroExitoso = false) }
+    }
 
     fun onNombreCambia(valor: String) {
-        _uiState.value = _uiState.value.copy(nombre = valor, errorNombre = null, registroExitoso = false)
+        _uiState.update { it.copy(nombre = valor, errorNombre = null, registroExitoso = false) }
     }
 
     fun onCorreoCambia(valor: String) {
-        _uiState.value = _uiState.value.copy(correo = valor, errorCorreo = null, registroExitoso = false)
+        _uiState.update { it.copy(correo = valor, errorCorreo = null, registroExitoso = false) }
     }
 
     fun onContrasenaCambia(valor: String) {
-        _uiState.value = _uiState.value.copy(contrasena = valor, errorContrasena = null, registroExitoso = false)
+        _uiState.update { it.copy(contrasena = valor, errorContrasena = null, registroExitoso = false) }
     }
 
     fun onTipoPreguntaClaveCambia(valor: Int) {
-        _uiState.value = _uiState.value.copy(tipoPreguntaClave = valor, errorRespuestaPregunta = null, registroExitoso = false)
+        _uiState.update { it.copy(tipoPreguntaClave = valor, errorRespuestaPregunta = null, registroExitoso = false) }
     }
 
     fun onRespuestaPreguntaClaveCambia(valor: String) {
-        _uiState.value = _uiState.value.copy(respuestaPreguntaClave = valor, errorRespuestaPregunta = null, registroExitoso = false)
+        _uiState.update { it.copy(respuestaPreguntaClave = valor, errorRespuestaPregunta = null, registroExitoso = false) }
     }
 
     fun onAlternarVisibilidadContrasena() {
         _uiState.update { it.copy(contrasenaVisible = !it.contrasenaVisible) }
     }
 
-    // Validaciones para botón registrarse
-
-    private fun validarNombre(nombre: String): String? {
-        return if (nombre.isBlank()) "El nombre es obligatorio" else null
+    private fun validarNombre(nombre: String): String? = when {
+        nombre.isBlank() -> "El nombre completo es obligatorio"
+        nombre.trim().length < 3 -> "Ingrese nombre y apellido (mínimo 3 caracteres)"
+        else -> null
     }
 
-    private fun validarCorreo(correo: String): String? {
-        if (correo.isBlank()) return null
-        val esValido = Patterns.EMAIL_ADDRESS.matcher(correo).matches()
-        return if (!esValido) "Ingrese un correo válido (ej: usuario@dominio.cl)" else null
+    private fun validarCorreo(correo: String): String? = when {
+        correo.isBlank() -> "El correo electrónico es obligatorio"
+        !Patterns.EMAIL_ADDRESS.matcher(correo.trim()).matches() -> "Ingrese un correo válido (ej: usuario@induztek.cl)"
+        else -> null
     }
 
-    private fun validarContrasena(contrasena: String): String? {
-        return if (contrasena.isBlank()) "La contraseña es obligatoria" else null
+    private fun validarContrasena(contrasena: String): String? = when {
+        contrasena.isBlank() -> "La contraseña es obligatoria"
+        contrasena.trim().length < 8 -> "La contraseña debe tener al menos 8 caracteres"
+        else -> null
     }
 
-    private fun validarRespuestaPregunta(respuesta: String): String? {
-        return if (respuesta.isBlank()) "La respuesta es obligatoria" else null
+    private fun validarRespuestaPregunta(respuesta: String): String? = when {
+        respuesta.isBlank() -> "La respuesta de seguridad es obligatoria"
+        respuesta.trim().length < 2 -> "Ingrese una respuesta más descriptiva"
+        else -> null
     }
 
     fun onRegistrar() {
@@ -84,27 +97,29 @@ class RegistroUsuarioEmpresaViewModel(application: Application): AndroidViewMode
         ).any { it != null }
 
         if (hayErrores) {
-            _uiState.update { it.copy(
-                errorNombre = errorNombre,
-                errorCorreo = errorCorreo,
-                errorContrasena = errorContrasena,
-                errorRespuestaPregunta = errorRespuestaPregunta,
-                registroExitoso = false
-            ) }
+            _uiState.update {
+                it.copy(
+                    errorNombre = errorNombre,
+                    errorCorreo = errorCorreo,
+                    errorContrasena = errorContrasena,
+                    errorRespuestaPregunta = errorRespuestaPregunta,
+                    registroExitoso = false
+                )
+            }
             return
         }
 
-        val contrasenaHasheada = SeguridadUtils.hashSHA256(estado.contrasena)
+        val empresaFk = if (estado.empresaId > 0L) estado.empresaId else null
+        val rolFinal = if (estado.empresaId > 0L) 4 else estado.rolIdSeleccionado
 
-        // Si no hay errores, se puede registrar
-        val exitoDb = dbHelper.insertarUsuario(
+        val exitoDb = usuarioRepository.registrarUsuario(
             nombre = estado.nombre,
             correo = estado.correo,
-            contrasena = contrasenaHasheada,
+            contrasenaPlana = estado.contrasena,
             tipoPregunta = estado.tipoPreguntaClave,
             respuestaPregunta = estado.respuestaPreguntaClave,
-            rolId = 4, //Representante de la empresa
-            empresaId = estado.empresaId
+            rolId = rolFinal,
+            empresaId = empresaFk
         )
 
         if (exitoDb) {

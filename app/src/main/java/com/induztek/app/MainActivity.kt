@@ -17,7 +17,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var sesionPreferencias: SesionPreferencias
 
     // Estado reactivo para que Compose actualice el tema al instante
-    private var modoTemaActual by mutableStateOf(ModoTema.SISTEMA)
+    private var modoTemaActual by mutableStateOf(ModoTema.CLARO)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

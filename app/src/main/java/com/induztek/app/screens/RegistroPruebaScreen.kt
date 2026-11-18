@@ -241,18 +241,29 @@ fun RegistroPruebaScreen(
                     OutlinedTextField(
                         value = uiState.tipoPrueba,
                         onValueChange = { viewModel.onTipoPruebaCambia(it) },
-                        label = { Text("Tipo de Prueba") },
+                        label = { Text("Tipo de Prueba (ej: Aislación, Tensión, Corriente)") },
+                        isError = uiState.errorTipoPrueba != null,
+                        supportingText = {
+                            uiState.errorTipoPrueba?.let {
+                                Text(it, color = MaterialTheme.colorScheme.error)
+                            }
+                        },
                         modifier = Modifier.fillMaxWidth()
                     )
 
                     OutlinedTextField(
                         value = uiState.valorMedicion,
                         onValueChange = { viewModel.onValorMedicionCambia(it) },
-                        label = { Text("Valor de Medición (ej: 500 MΩ, 220V)") },
+                        label = { Text("Valor Numérico (${uiState.unidadMedida})") },
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                            keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal
+                        ),
                         isError = uiState.errorValorMedicion != null,
                         supportingText = {
-                            uiState.errorValorMedicion?.let {
-                                Text(it, color = MaterialTheme.colorScheme.error)
+                            if (uiState.errorValorMedicion != null) {
+                                Text(uiState.errorValorMedicion!!, color = MaterialTheme.colorScheme.error)
+                            } else {
+                                Text("Ingrese solo el valor numérico (ej: 500.5)")
                             }
                         },
                         modifier = Modifier.fillMaxWidth()

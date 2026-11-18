@@ -10,6 +10,7 @@ import android.provider.MediaStore
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -29,6 +30,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -36,6 +38,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -54,6 +57,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -61,6 +65,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.rememberAsyncImagePainter
 import com.induztek.app.R
 import com.induztek.app.model.Usuario
+import com.induztek.app.ui.components.CampoContrasena
+import com.induztek.app.ui.components.CampoTexto
 import com.induztek.app.ui.components.TarjetaSeccion
 import com.induztek.app.ui.theme.Dimens
 import com.induztek.app.viewmodel.PerfilViewModel
@@ -83,14 +89,12 @@ fun PerfilScreen(
 
     var mostrarDialogoOpciones by remember { mutableStateOf(false) }
 
-    // 1. Selector de Galería
     val galeriaLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         uri?.let { viewModel.actualizarFotoPerfil(it) }
     }
 
-    // 2. Launcher de Cámara seguro (retorna Bitmap directamente)
     val camaraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicturePreview()
     ) { bitmap: Bitmap? ->
@@ -100,7 +104,6 @@ fun PerfilScreen(
         }
     }
 
-    // Permisos
     val permisoCamaraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { esConcedido ->
@@ -119,13 +122,8 @@ fun PerfilScreen(
 
     val permisoGaleriaLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
-    ) { esConcedido ->
-        if (esConcedido) {
-            galeriaLauncher.launch("image/*")
-        } else {
-            // En versiones nuevas de Android el picker nativo funciona directo
-            galeriaLauncher.launch("image/*")
-        }
+    ) {
+        galeriaLauncher.launch("image/*")
     }
 
     fun abrirGaleria() {
@@ -133,7 +131,6 @@ fun PerfilScreen(
         if (tienePermiso) {
             galeriaLauncher.launch("image/*")
         } else {
-            // Solicita explícitamente el permiso antes de abrir
             permisoGaleriaLauncher.launch(permisoGaleria)
         }
     }
@@ -210,7 +207,6 @@ fun PerfilScreen(
                     }
                 }
 
-                // Botón encima de la foto
                 Box(
                     modifier = Modifier
                         .size(38.dp)
@@ -244,11 +240,10 @@ fun PerfilScreen(
                 Text(
                     text = it,
                     color = MaterialTheme.colorScheme.primary,
-                    style = MaterialTheme.typography.bodySmall
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium
                 )
             }
-
-            Spacer(modifier = Modifier.height(Dimens.espacioChico))
 
             // Información Detallada
             TarjetaSeccion(titulo = "Información Personal y Acceso") {
@@ -266,14 +261,122 @@ fun PerfilScreen(
                     )
 
                     ItemInfoPerfil(
-                        etiqueta = "Empresa / Representante de la Empresa",
+                        etiqueta = "Empresa / Organización",
                         valor = usuarioActual?.empresaNombre ?: "Induztek Servicios Industriales",
                         iconoRes = R.drawable.ic_instalacion
                     )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(Dimens.espacioChico)
+                    ) {
+                        OutlinedButton(
+                            onClick = viewModel::onAlternarEditarPerfil,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text(if (uiState.editandoPerfil) "Cancelar" else "Editar Perfil")
+                        }
+                        OutlinedButton(
+                            onClick = viewModel::onAlternarCambiarClave,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text(if (uiState.cambiandoClave) "Cancelar" else "Cambiar Clave")
+                        }
+                    }
                 }
             }
 
-            Spacer(modifier = Modifier.height(Dimens.espacioGrande))
+            // Formulario 1: Editar Perfil (animado)
+            AnimatedVisibility(visible = uiState.editandoPerfil) {
+                TarjetaSeccion(titulo = "Editar Datos del Perfil") {
+                    Column(verticalArrangement = Arrangement.spacedBy(Dimens.espacioChico)) {
+                        CampoTexto(
+                            valor = uiState.nombreEditado,
+                            onValorCambia = viewModel::onNombreEditadoCambia,
+                            etiqueta = "Nombre Completo",
+                            error = uiState.errorNombre,
+                            tipoTeclado = KeyboardType.Text,
+                            icono = R.drawable.ic_person
+                        )
+
+                        CampoTexto(
+                            valor = uiState.correoEditado,
+                            onValorCambia = viewModel::onCorreoEditadoCambia,
+                            etiqueta = "Correo Electrónico",
+                            error = uiState.errorCorreo,
+                            tipoTeclado = KeyboardType.Email,
+                            icono = R.drawable.ic_correo
+                        )
+
+                        Button(
+                            onClick = viewModel::onGuardarPerfil,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Guardar Cambios")
+                        }
+                    }
+                }
+            }
+
+            // Formulario 2: Cambiar Contraseña (animado)
+            // Formulario 2: Cambiar Contraseña (con doble verificación)
+            AnimatedVisibility(visible = uiState.cambiandoClave) {
+                TarjetaSeccion(titulo = "Cambiar Contraseña") {
+                    Column(verticalArrangement = Arrangement.spacedBy(Dimens.espacioChico)) {
+                        CampoContrasena(
+                            valor = uiState.claveActual,
+                            onValorCambia = viewModel::onClaveActualCambia,
+                            etiqueta = "Contraseña Actual",
+                            visible = uiState.clavesVisibles,
+                            onAlternarVisible = viewModel::onAlternarVisibilidadClaves,
+                            error = uiState.errorClaveActual
+                        )
+
+                        Text(
+                            text = "Verificación de seguridad: ${uiState.textoPreguntaSeguridad}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.secondary,
+                            fontWeight = FontWeight.Medium
+                        )
+
+                        CampoTexto(
+                            valor = uiState.respuestaSeguridad,
+                            onValorCambia = viewModel::onRespuestaSeguridadCambia,
+                            etiqueta = "Respuesta de Seguridad",
+                            error = uiState.errorRespuestaSeguridad,
+                            tipoTeclado = KeyboardType.Text,
+                            icono = R.drawable.ic_contrasena
+                        )
+
+                        CampoContrasena(
+                            valor = uiState.claveNueva,
+                            onValorCambia = viewModel::onClaveNuevaCambia,
+                            etiqueta = "Nueva Contraseña (mín. 8 caracteres)",
+                            visible = uiState.clavesVisibles,
+                            onAlternarVisible = viewModel::onAlternarVisibilidadClaves,
+                            error = uiState.errorClaveNueva
+                        )
+
+                        CampoContrasena(
+                            valor = uiState.confirmarClaveNueva,
+                            onValorCambia = viewModel::onConfirmarClaveNuevaCambia,
+                            etiqueta = "Confirmar Nueva Contraseña",
+                            visible = uiState.clavesVisibles,
+                            onAlternarVisible = viewModel::onAlternarVisibilidadClaves,
+                            error = uiState.errorConfirmarClave
+                        )
+
+                        Button(
+                            onClick = viewModel::onGuardarNuevaClave,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Actualizar Contraseña")
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(Dimens.espacioChico))
 
             // Botón de Cerrar Sesión
             Card(
@@ -308,7 +411,6 @@ fun PerfilScreen(
         }
     }
 
-    // Diálogo emergente Opciones de Imagen
     if (mostrarDialogoOpciones) {
         AlertDialog(
             onDismissRequest = { mostrarDialogoOpciones = false },
@@ -343,7 +445,6 @@ fun PerfilScreen(
     }
 }
 
-// Función auxiliar para convertir el Bitmap capturado por la cámara en Uri para Coil
 private fun guardarBitmapEnUri(context: Context, bitmap: Bitmap): Uri? {
     val bytes = ByteArrayOutputStream()
     bitmap.compress(Bitmap.CompressFormat.JPEG, 100, bytes)

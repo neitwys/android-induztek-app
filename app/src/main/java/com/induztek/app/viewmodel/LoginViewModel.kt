@@ -3,27 +3,35 @@ package com.induztek.app.viewmodel
 import android.app.Application
 import android.util.Patterns
 import androidx.lifecycle.AndroidViewModel
-import com.induztek.app.data.InduztekDbHelper
+import com.induztek.app.data.repository.AuthRepository
+import com.induztek.app.data.repository.LocalAuthRepository
 import com.induztek.app.model.LoginUiState
 import com.induztek.app.model.Usuario
-import com.induztek.app.utils.SeguridadUtils // Importamos nuestra utilidad de encriptación
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
-class LoginViewModel(application: Application): AndroidViewModel(application) {
-    private val dbHelper = InduztekDbHelper(application)
+class LoginViewModel(
+    application: Application,
+    private val authRepository: AuthRepository
+) : AndroidViewModel(application) {
+
+    // Constructor secundario para que viewModel() siga funcionando sin cambios en LoginScreen
+    constructor(application: Application) : this(
+        application = application,
+        authRepository = LocalAuthRepository(application)
+    )
 
     private val _uiState = MutableStateFlow(LoginUiState())
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
 
     fun onCorreoCambia(correo: String) {
-        _uiState.update { it.copy(correo = correo, errorCorreo = null, errorGeneral = null)}
+        _uiState.update { it.copy(correo = correo, errorCorreo = null, errorGeneral = null) }
     }
 
     fun onContrasenaCambia(contrasena: String) {
-        _uiState.update { it.copy(contrasena = contrasena, errorContrasena = null, errorGeneral = null)}
+        _uiState.update { it.copy(contrasena = contrasena, errorContrasena = null, errorGeneral = null) }
     }
 
     fun onAlternarVisibilidadContrasena() {
@@ -48,28 +56,26 @@ class LoginViewModel(application: Application): AndroidViewModel(application) {
             _uiState.update {
                 it.copy(
                     errorCorreo = errorCorreo,
-                    errorContrasena = errorContrasena
+                    errorContrasena = errorContrasena,
+                    errorGeneral = null
                 )
             }
             return
         }
 
-        val correoLimpio = estado.correo.lowercase().trim()
-        val usuarioEncontrado = dbHelper.buscarPorCorreo(correoLimpio)
+        val usuarioAutenticado = authRepository.autenticar(estado.correo, estado.contrasena)
 
-        if (usuarioEncontrado == null) {
-            _uiState.update { it.copy(errorCorreo = "El correo y/o contraseña están incorrectas.") }
+        if (usuarioAutenticado == null) {
+            _uiState.update {
+                it.copy(
+                    errorCorreo = null,
+                    errorContrasena = null,
+                    errorGeneral = "Correo o contraseña incorrectos."
+                )
+            }
             return
         }
 
-        // Convertimos la clave ingresada a Hash SHA-256 antes de comparar
-        val contrasenaHashIngresada = SeguridadUtils.hashSHA256(estado.contrasena.trim())
-
-        if (contrasenaHashIngresada != usuarioEncontrado.contrasena) {
-            _uiState.update { it.copy(errorContrasena = "El correo y/o contraseña están incorrectas.") }
-            return
-        }
-
-        onExito(usuarioEncontrado)
+        onExito(usuarioAutenticado)
     }
 }

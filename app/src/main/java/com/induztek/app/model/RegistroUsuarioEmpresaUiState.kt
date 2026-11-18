@@ -3,6 +3,7 @@ package com.induztek.app.model
 data class RegistroUsuarioEmpresaUiState(
     val empresaId: Long = 0L,
     val empresaNombre: String = "",
+    val rolIdSeleccionado: Int = 4,
     val nombre: String = "",
     val correo: String = "",
     val contrasena: String = "",
@@ -16,6 +17,5 @@ data class RegistroUsuarioEmpresaUiState(
     val errorRespuestaPregunta: String? = null,
 
     val registroExitoso: Boolean = false,
-
     val contrasenaVisible: Boolean = false
 )

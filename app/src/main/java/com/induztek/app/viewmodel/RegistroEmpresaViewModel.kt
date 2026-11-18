@@ -3,37 +3,49 @@ package com.induztek.app.viewmodel
 import android.app.Application
 import android.util.Patterns
 import androidx.lifecycle.AndroidViewModel
-import com.induztek.app.data.InduztekDbHelper
+import com.induztek.app.data.repository.EmpresaRepository
+import com.induztek.app.data.repository.LocalEmpresaRepository
 import com.induztek.app.model.RegistroEmpresaUiState
+import com.induztek.app.utils.ValidacionUtils
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
-//Aqui tambien cambiamos al AndroidViewModel porque usa las base de datos.
-class RegistroEmpresaViewModel(application: Application): AndroidViewModel(application) {
-    private val dbHelper = InduztekDbHelper(application)
+class RegistroEmpresaViewModel(
+    application: Application,
+    private val empresaRepository: EmpresaRepository
+) : AndroidViewModel(application) {
+
+    constructor(application: Application) : this(
+        application = application,
+        empresaRepository = LocalEmpresaRepository(application)
+    )
+
     private val _uiState = MutableStateFlow(RegistroEmpresaUiState())
     val uiState: StateFlow<RegistroEmpresaUiState> = _uiState.asStateFlow()
-
-    // Eventos de los campos
 
     // Eventos de la Empresa
     fun onRazonSocialCambia(valor: String) {
         _uiState.update { it.copy(razonSocial = valor, errorRazonSocial = null, registroExitoso = false) }
     }
+
     fun onRutCambia(valor: String) {
         _uiState.update { it.copy(rut = valor, errorRut = null, registroExitoso = false) }
     }
+
     fun onGiroCambia(valor: String) {
         _uiState.update { it.copy(giro = valor, errorGiro = null, registroExitoso = false) }
     }
+
     fun onContactoCambia(valor: String) {
         _uiState.update { it.copy(contacto = valor, errorContacto = null, registroExitoso = false) }
     }
+
     fun onTelefonoCambia(valor: String) {
         _uiState.update { it.copy(telefono = valor, errorTelefono = null, registroExitoso = false) }
     }
+
     fun onCorreoCambia(valor: String) {
         _uiState.update { it.copy(correo = valor, errorCorreo = null, registroExitoso = false) }
     }
@@ -42,100 +54,153 @@ class RegistroEmpresaViewModel(application: Application): AndroidViewModel(appli
     fun onNombreInstalacionCambia(valor: String) {
         _uiState.update { it.copy(nombreInstalacion = valor, errorNombreInstalacion = null, registroExitoso = false) }
     }
+
     fun onUbicacionCambia(valor: String) {
         _uiState.update { it.copy(ubicacion = valor, errorUbicacion = null, registroExitoso = false) }
     }
+
     fun onComunaCambia(valor: String) {
         _uiState.update { it.copy(comuna = valor, errorComuna = null, registroExitoso = false) }
     }
+
     fun onRegionCambia(valor: String) {
         _uiState.update { it.copy(region = valor, errorRegion = null, registroExitoso = false) }
     }
+
     fun onObservacionesAccesoCambia(valor: String) {
         _uiState.update { it.copy(observacionesAcceso = valor, errorObservacionesAcceso = null, registroExitoso = false) }
     }
 
-    // Validaciones para botón registrarse
-    private fun validarRazonSocial(razonSocial: String): String? {
-        return if (razonSocial.isBlank()) "La razón social es obligatoria" else null
-    }
-    private fun validarRut(rut: String): String? {
-        return if (rut.isBlank()) "El RUT es obligatorio" else null
-    }
-
-    private fun validarContacto(contacto: String): String? {
-        return if (contacto.isBlank()) "El nombre de contacto es obligatorio" else null
+    // Validaciones completas por campo
+    private fun validarRazonSocial(valor: String): String? = when {
+        valor.isBlank() -> "La razón social es obligatoria"
+        valor.trim().length < 3 -> "Debe tener al menos 3 caracteres"
+        else -> null
     }
 
-    private fun validarCorreo(correo: String): String? {
-        if (correo.isBlank()) return null
-        val esValido = Patterns.EMAIL_ADDRESS.matcher(correo).matches()
-        return if (!esValido) "Ingrese un correo válido (ej: usuario@dominio.cl)" else null
-    }
-    private fun validarNombreInstalacion(nombre: String): String? {
-        return if (nombre.isBlank()) "El nombre de la instalación es obligatorio" else null
+    private fun validarRut(valor: String): String? = when {
+        valor.isBlank() -> "El RUT es obligatorio"
+        !ValidacionUtils.esRutValido(valor) -> "RUT inválido (ej: 76.543.210-9)"
+        else -> null
     }
 
-    // Botones
+    private fun validarGiro(valor: String): String? = when {
+        valor.isBlank() -> "El giro comercial es obligatorio"
+        valor.trim().length < 4 -> "Ingrese un giro descriptivo"
+        else -> null
+    }
 
-    // Botón limpiar
+    private fun validarContacto(valor: String): String? = when {
+        valor.isBlank() -> "El nombre de contacto es obligatorio"
+        valor.trim().length < 3 -> "Ingrese nombre y apellido"
+        else -> null
+    }
+
+    private fun validarTelefono(valor: String): String? = when {
+        valor.isBlank() -> "El teléfono es obligatorio"
+        !ValidacionUtils.esTelefonoChilenoValido(valor) -> "Formato inválido (ej: +56912345678 o 912345678)"
+        else -> null
+    }
+
+    private fun validarCorreo(valor: String): String? = when {
+        valor.isBlank() -> "El correo corporativo es obligatorio"
+        !Patterns.EMAIL_ADDRESS.matcher(valor.trim()).matches() -> "Ingrese un correo válido (ej: contacto@empresa.cl)"
+        else -> null
+    }
+
+    private fun validarNombreInstalacion(valor: String): String? = when {
+        valor.isBlank() -> "El nombre de la instalación es obligatorio"
+        valor.trim().length < 3 -> "Debe tener al menos 3 caracteres"
+        else -> null
+    }
+
+    private fun validarUbicacion(valor: String): String? = when {
+        valor.isBlank() -> "La dirección es obligatoria"
+        valor.trim().length < 5 -> "Ingrese calle y numeración o referencia"
+        else -> null
+    }
+
+    private fun validarComuna(valor: String): String? =
+        if (valor.isBlank()) "La comuna es obligatoria" else null
+
+    private fun validarRegion(valor: String): String? =
+        if (valor.isBlank()) "La región es obligatoria" else null
+
     fun onLimpiar() {
         _uiState.value = RegistroEmpresaUiState()
     }
 
-    // Botón registrarse
     fun onRegistrar() {
         val estado = _uiState.value
 
         val errorRazonSocial = validarRazonSocial(estado.razonSocial)
         val errorRut = validarRut(estado.rut)
-        val errorCorreo = validarCorreo(estado.correo)
+        val errorGiro = validarGiro(estado.giro)
         val errorContacto = validarContacto(estado.contacto)
+        val errorTelefono = validarTelefono(estado.telefono)
+        val errorCorreo = validarCorreo(estado.correo)
         val errorNombreInstalacion = validarNombreInstalacion(estado.nombreInstalacion)
+        val errorUbicacion = validarUbicacion(estado.ubicacion)
+        val errorComuna = validarComuna(estado.comuna)
+        val errorRegion = validarRegion(estado.region)
 
         val hayErrores = listOf(
             errorRazonSocial,
             errorRut,
-            errorCorreo,
+            errorGiro,
             errorContacto,
-            errorNombreInstalacion
+            errorTelefono,
+            errorCorreo,
+            errorNombreInstalacion,
+            errorUbicacion,
+            errorComuna,
+            errorRegion
         ).any { it != null }
 
         if (hayErrores) {
-            _uiState.update { it.copy(
-                errorRazonSocial = errorRazonSocial,
-                errorRut = errorRut,
-                errorCorreo = errorCorreo,
-                errorContacto = errorContacto,
-                errorNombreInstalacion = errorNombreInstalacion,
-                registroExitoso = false
-            ) }
+            _uiState.update {
+                it.copy(
+                    errorRazonSocial = errorRazonSocial,
+                    errorRut = errorRut,
+                    errorGiro = errorGiro,
+                    errorContacto = errorContacto,
+                    errorTelefono = errorTelefono,
+                    errorCorreo = errorCorreo,
+                    errorNombreInstalacion = errorNombreInstalacion,
+                    errorUbicacion = errorUbicacion,
+                    errorComuna = errorComuna,
+                    errorRegion = errorRegion,
+                    registroExitoso = false
+                )
+            }
             return
         }
 
-        //Si pasa las validaciones, guardamos en la base de datos.
-        val idGenerado = dbHelper.insertarEmpresaConInstalacion(
-            razonSocial = estado.razonSocial,
-            rut = estado.rut,
-            giro = estado.giro,
-            contacto = estado.contacto,
-            telefono = estado.telefono,
-            correo = estado.correo,
-            nombreInstalacion = estado.nombreInstalacion,
-            ubicacion = estado.ubicacion,
-            comuna = estado.comuna,
-            region = estado.region,
-            observaciones = estado.observacionesAcceso
+        val rutFormateado = ValidacionUtils.formatearRut(estado.rut)
+
+        val idGenerado = empresaRepository.registrarEmpresaConInstalacion(
+            razonSocial = estado.razonSocial.trim(),
+            rut = rutFormateado,
+            giro = estado.giro.trim(),
+            contacto = estado.contacto.trim(),
+            telefono = estado.telefono.trim(),
+            correo = estado.correo.trim().lowercase(),
+            nombreInstalacion = estado.nombreInstalacion.trim(),
+            ubicacion = estado.ubicacion.trim(),
+            comuna = estado.comuna.trim(),
+            region = estado.region.trim(),
+            observaciones = estado.observacionesAcceso.trim()
         )
 
         if (idGenerado != -1L) {
-            // Se guardó con éxito: asignamos el ID al UiState para que LaunchedEffect gatille la navegación
-            _uiState.update { it.copy(
-                idEmpresaGenerado = idGenerado,
-                registroExitoso = true
-            ) }
+            _uiState.update {
+                it.copy(
+                    rut = rutFormateado,
+                    idEmpresaGenerado = idGenerado,
+                    registroExitoso = true
+                )
+            }
         } else {
-            // Si falló (por ejemplo, el RUT ya está registrado por la restricción UNIQUE)
             _uiState.update {
                 it.copy(
                     errorRut = "El RUT ya se encuentra registrado",
@@ -144,7 +209,4 @@ class RegistroEmpresaViewModel(application: Application): AndroidViewModel(appli
             }
         }
     }
-
-
-
 }

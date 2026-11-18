@@ -7,7 +7,6 @@ import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import com.induztek.app.model.Equipo
 import com.induztek.app.model.ProtocoloPrueba
-import com.induztek.app.model.Rol
 import com.induztek.app.model.Usuario
 import com.induztek.app.utils.SeguridadUtils
 
@@ -16,7 +15,7 @@ class InduztekDbHelper(context: Context) :
 
     companion object {
         private const val NOMBRE_DB = "induztek.db"
-        private const val VERSION_DB = 7 // Subimos la versión para forzar actualización de esquema
+        private const val VERSION_DB = 9
 
         //----------------- TABLA ROLES -----------------//
         private const val TABLA_ROLES = "roles"
@@ -42,9 +41,8 @@ class InduztekDbHelper(context: Context) :
         private const val USU_ROL = "id_rol"
         private const val USU_TIPO_PREGUNTA = "tipo_pregunta_clave"
         private const val USU_RESPUESTA_PREGUNTA = "respuesta_pregunta_clave"
-        private const val USU_FOTO_PERFIL = "foto_perfil" // Nueva columna para persistencia
+        private const val USU_FOTO_PERFIL = "foto_perfil"
         private const val USU_EMPRESA_ID_FK = "id_empresa_fk"
-
 
         //----------------- TABLA INSTALACIONES -----------------//
         private const val TABLA_INSTALACIONES = "instalaciones"
@@ -151,13 +149,12 @@ class InduztekDbHelper(context: Context) :
             "INSERT INTO $TABLA_EMPRESAS_CLIENTES ($EMP_ID, $EMP_RAZON_SOCIAL, $EMP_RUT, $EMP_GIRO, $EMP_CONTACTO, $EMP_TELEFONO, $EMP_CORREO) VALUES " +
                     "(1, 'Envasadora del Pacífico SpA', '76.543.210-9', 'Industrial / Envasado', 'Carlos Soto', '+56912345678', 'contacto@envasadora.ejemplo')"
 
-        private const val SQL_PRECARGAR_USUARIOS =
+        private val SQL_PRECARGAR_USUARIOS =
             "INSERT INTO $TABLA_USUARIOS ($USU_NOMBRE, $USU_CORREO, $USU_CONTRASENA, $USU_EMPRESA_ID_FK, $USU_ROL, $USU_TIPO_PREGUNTA, $USU_RESPUESTA_PREGUNTA) VALUES " +
-                    "('Matías Godoy Herrera', 'mgodoy@induztek.ejemplo', '15e2b0d3c33891ebb0f1ef609ec419420c20e320ce94c65fbc8c3312448eb225', NULL, 1, 1, 'toby'), " +
-                    "('Andrea Contreras Silva', 'acontreras@induztek.ejemplo', 'bfb032d1f73602f314810c9c7f212f86a9782559595a89ee1d56e18f259b360a', NULL, 2, 2, 'los prisioneros'), " +
-                    "('Ricardo Espinoza Lagos', 'respinoza@induztek.ejemplo', 'a768d60ef4fb3d73516f48105d10d185ef35bfae1bc98a58f4c39999496660fb', NULL, 3, 3, 'azul'), " +
-                    "('Marcela Fuentes Rojas', 'mfuentes@envpacifico.ejemplo', 'dfb97a760ef164c48f219d3f1146747127e5eb562efee76dbfc42d93d14467c6', 1, 4, 1, 'cachupin')"
-
+                    "('Matías Godoy Herrera', 'mgodoy@induztek.ejemplo', '${SeguridadUtils.hashSHA256("123456789")}', NULL, 1, 1, 'toby'), " +
+                    "('Andrea Contreras Silva', 'acontreras@induztek.ejemplo', '${SeguridadUtils.hashSHA256("987654321")}', NULL, 2, 2, 'los prisioneros'), " +
+                    "('Ricardo Espinoza Lagos', 'respinoza@induztek.ejemplo', '${SeguridadUtils.hashSHA256("135792468")}', NULL, 3, 3, 'azul'), " +
+                    "('Marcela Fuentes Rojas', 'mfuentes@envpacifico.ejemplo', '${SeguridadUtils.hashSHA256("246813579")}', 1, 4, 1, 'cachupin')"
         private const val SQL_PRECARGAR_INSTALACIONES =
             "INSERT INTO $TABLA_INSTALACIONES ($INST_NOMBRE, $INST_UBICACION, $INST_COMUNA, $INST_REGION, $INST_OBS, $INST_EMPRESA_ID_FK) VALUES " +
                     "('Planta Lampa', 'Ruta 5 Norte Km 28', 'Lampa', 'Metropolitana', 'Requiere inducción previa', 1)"
@@ -221,18 +218,18 @@ class InduztekDbHelper(context: Context) :
         tipoPregunta: Int,
         respuestaPregunta: String,
         rolId: Int,
-        empresaId: Long? = null // Es opcional, por defecto es null si no se envía
+        empresaId: Long? = null
     ): Boolean {
         val db = this.writableDatabase
+        val claveHash = SeguridadUtils.hashSHA256(contrasena.trim())
         val valores = ContentValues().apply {
-            put(USU_NOMBRE, nombre) // Usa tus constantes como USU_NOMBRE
-            put(USU_CORREO, correo)
-            put(USU_CONTRASENA, contrasena)
+            put(USU_NOMBRE, nombre.trim())
+            put(USU_CORREO, correo.trim().lowercase())
+            put(USU_CONTRASENA, claveHash)
             put(USU_TIPO_PREGUNTA, tipoPregunta)
             put(USU_RESPUESTA_PREGUNTA, respuestaPregunta.trim().lowercase())
             put(USU_ROL, rolId)
 
-            // Por si el usuario que se registre sea un Representante de Empresa
             if (empresaId != null) {
                 put(USU_EMPRESA_ID_FK, empresaId)
             } else {
@@ -241,8 +238,6 @@ class InduztekDbHelper(context: Context) :
         }
 
         val resultado = db.insert(TABLA_USUARIOS, null, valores)
-        db.close()
-
         return resultado != -1L
     }
 
@@ -272,13 +267,15 @@ class InduztekDbHelper(context: Context) :
             TABLA_USUARIOS, valores, "$USU_ID = ?", arrayOf(idUsuario.toString())
         )
     }
+    fun eliminarUsuario(id: Long): Int {
+        return writableDatabase.delete(TABLA_USUARIOS, "$USU_ID = ?", arrayOf(id.toString()))
+    }
 
     //----------------- EMPRESAS CLIENTES -----------------//
     fun insertarEmpresaConInstalacion(
         razonSocial: String, rut: String, giro: String, contacto: String, telefono: String, correo: String,
         nombreInstalacion: String, ubicacion: String, comuna: String, region: String, observaciones: String
-    ): Long //Diras, porque un long? porque retornara la empresaId para la siguiente pantalla, si falla es un -1L
-    {
+    ): Long {
         val db = writableDatabase
         db.beginTransaction()
         try {
@@ -347,6 +344,7 @@ class InduztekDbHelper(context: Context) :
         }
         return lista
     }
+
     fun eliminarEmpresa(id: Long): Int {
         return writableDatabase.delete(TABLA_EMPRESAS_CLIENTES, "$EMP_ID = ?", arrayOf(id.toString()))
     }
@@ -389,9 +387,20 @@ class InduztekDbHelper(context: Context) :
         return idGenerado != -1L
     }
 
-    fun obtenerProtocolosPorEquipo(codigoEquipo: String): List<ProtocoloPrueba> {
+    fun obtenerProtocolosPorEquipo(codigoEquipo: String, empresaIdFiltro: Long? = null): List<ProtocoloPrueba> {
         val lista = mutableListOf<ProtocoloPrueba>()
-        val patron = "%$codigoEquipo%"
+        val patron = "%${codigoEquipo.trim()}%"
+
+        val condiciones = mutableListOf("e.$EQ_CODIGO LIKE ?")
+        val argumentos = mutableListOf(patron)
+
+        if (empresaIdFiltro != null && empresaIdFiltro > 0L) {
+            condiciones.add("i.$INST_EMPRESA_ID_FK = ?")
+            argumentos.add(empresaIdFiltro.toString())
+        }
+
+        val whereClause = condiciones.joinToString(" AND ")
+
         val sql = """
             SELECT p.$PROT_ID, p.$PROT_EQ_ID, e.$EQ_CODIGO, e.$EQ_TIPO,
                    p.$PROT_USU_ID, u.$USU_NOMBRE, p.$PROT_FECHA, p.$PROT_TIPO,
@@ -399,12 +408,13 @@ class InduztekDbHelper(context: Context) :
                    p.$PROT_FOTO_URI, p.$PROT_LATITUD, p.$PROT_LONGITUD
             FROM $TABLA_PROTOCOLOS p
             INNER JOIN $TABLA_EQUIPOS e ON p.$PROT_EQ_ID = e.$EQ_ID
+            INNER JOIN $TABLA_INSTALACIONES i ON e.$EQ_INST_ID = i.$INST_ID
             INNER JOIN $TABLA_USUARIOS u ON p.$PROT_USU_ID = u.$USU_ID
-            WHERE e.$EQ_CODIGO LIKE ?
+            WHERE $whereClause
             ORDER BY p.$PROT_ID DESC
         """.trimIndent()
 
-        readableDatabase.rawQuery(sql, arrayOf(patron)).use { cursor ->
+        readableDatabase.rawQuery(sql, argumentos.toTypedArray()).use { cursor ->
             while (cursor.moveToNext()) {
                 lista.add(
                     ProtocoloPrueba(
@@ -470,7 +480,25 @@ class InduztekDbHelper(context: Context) :
             fotoPerfilPath = fotoPath
         )
     }
+    fun actualizarDatosUsuario(idUsuario: Long, nombre: String, correo: String): Boolean {
+        return try {
+            val valores = ContentValues().apply {
+                put(USU_NOMBRE, nombre.trim())
+                put(USU_CORREO, correo.trim().lowercase())
+            }
+            val filas = writableDatabase.update(
+                TABLA_USUARIOS,
+                valores,
+                "$USU_ID = ?",
+                arrayOf(idUsuario.toString())
+            )
+            filas > 0
+        } catch (e: Exception) {
+            false
+        }
+    }
 }
+
 
 // Data class para listar empresas junto con sus instalaciones
 data class EmpresaConInstalacion(
@@ -486,4 +514,3 @@ data class EmpresaConInstalacion(
     val comuna: String,
     val region: String
 )
-

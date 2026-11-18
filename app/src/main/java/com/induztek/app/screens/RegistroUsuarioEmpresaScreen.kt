@@ -2,6 +2,8 @@ package com.induztek.app.screens
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -11,7 +13,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -22,8 +26,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.induztek.app.R
@@ -35,16 +39,14 @@ import com.induztek.app.ui.components.TarjetaSeccion
 import com.induztek.app.ui.theme.Dimens
 import com.induztek.app.viewmodel.RegistroUsuarioEmpresaViewModel
 
-//3. Constructor
 @Composable
 fun RegistroUsuarioEmpresaScreen(
-    empresaId: Long, //Recibimos empresaId como parámetro
+    empresaId: Long = 0L,
     viewModel: RegistroUsuarioEmpresaViewModel = viewModel(),
     onVolver: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    //Carga la empresaId en el ViewModel cuando la pantalla se inicia
     LaunchedEffect(empresaId) {
         viewModel.inicializarEmpresaId(empresaId)
     }
@@ -57,6 +59,7 @@ fun RegistroUsuarioEmpresaScreen(
 
     RegistroUsuarioEmpresaContent(
         uiState = uiState,
+        onRolCambia = viewModel::onRolCambia,
         onNombreCambia = viewModel::onNombreCambia,
         onCorreoCambia = viewModel::onCorreoCambia,
         onContrasenaCambia = viewModel::onContrasenaCambia,
@@ -68,11 +71,11 @@ fun RegistroUsuarioEmpresaScreen(
     )
 }
 
-//1. Contenido
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun RegistroUsuarioEmpresaContent(
     uiState: RegistroUsuarioEmpresaUiState,
+    onRolCambia: (Int) -> Unit,
     onNombreCambia: (String) -> Unit,
     onCorreoCambia: (String) -> Unit,
     onContrasenaCambia: (String) -> Unit,
@@ -82,14 +85,21 @@ fun RegistroUsuarioEmpresaContent(
     onRegistrar: () -> Unit,
     onVolver: () -> Unit
 ) {
+    val esRepresentante = uiState.empresaId > 0L
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Registro de Representante de la Empresa") },
+                title = {
+                    Text(
+                        if (esRepresentante) "Registro de Representante"
+                        else "Registrar Nuevo Perfil Induztek"
+                    )
+                },
                 navigationIcon = {
-                    androidx.compose.material3.IconButton(onClick = onVolver) {
+                    IconButton(onClick = onVolver) {
                         Icon(
-                            painter = painterResource(R.drawable.ic_volver), // Asegúrate de tener tu ícono de volver
+                            painter = painterResource(R.drawable.ic_volver),
                             contentDescription = "Volver",
                             tint = MaterialTheme.colorScheme.onPrimary
                         )
@@ -97,7 +107,7 @@ fun RegistroUsuarioEmpresaContent(
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor =MaterialTheme.colorScheme.onPrimary
+                    titleContentColor = MaterialTheme.colorScheme.onPrimary
                 )
             )
         },
@@ -111,12 +121,36 @@ fun RegistroUsuarioEmpresaContent(
                 .padding(Dimens.espacioGrande),
             verticalArrangement = Arrangement.spacedBy(Dimens.espacioMedio)
         ) {
-            // Tarjeta 1. Datos del representante de la empresa
-            TarjetaSeccion(titulo = "Datos del Representante de la Empresa") {
+            if (!esRepresentante) {
+                TarjetaSeccion(titulo = "Perfil / Rol del Usuario") {
+                    val rolesInternos = listOf(
+                        1 to "Técnico de Terreno",
+                        2 to "Ingeniero de Pruebas",
+                        3 to "Jefe Técnico"
+                    )
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(Dimens.espacioChico),
+                        verticalArrangement = Arrangement.spacedBy(Dimens.espacioChico)
+                    ) {
+                        rolesInternos.forEach { (idRol, nombreRol) ->
+                            FilterChip(
+                                selected = uiState.rolIdSeleccionado == idRol,
+                                onClick = { onRolCambia(idRol) },
+                                label = { Text(nombreRol) }
+                            )
+                        }
+                    }
+                }
+            }
+
+            TarjetaSeccion(
+                titulo = if (esRepresentante) "Datos del Representante de la Empresa"
+                else "Datos del Usuario"
+            ) {
                 CampoTexto(
                     valor = uiState.nombre,
                     onValorCambia = onNombreCambia,
-                    etiqueta = "Nombre de Representante de la Empresa",
+                    etiqueta = "Nombre Completo",
                     error = uiState.errorNombre,
                     tipoTeclado = KeyboardType.Text,
                     icono = R.drawable.ic_person
@@ -125,7 +159,7 @@ fun RegistroUsuarioEmpresaContent(
                 CampoTexto(
                     valor = uiState.correo,
                     onValorCambia = onCorreoCambia,
-                    etiqueta = "Correo Electrónico (ej: jose@empresa.com)",
+                    etiqueta = "Correo Electrónico (ej: usuario@induztek.cl)",
                     error = uiState.errorCorreo,
                     tipoTeclado = KeyboardType.Email,
                     icono = R.drawable.ic_correo
@@ -134,7 +168,7 @@ fun RegistroUsuarioEmpresaContent(
                 CampoContrasena(
                     valor = uiState.contrasena,
                     onValorCambia = onContrasenaCambia,
-                    etiqueta = "Contraseña",
+                    etiqueta = "Contraseña (mínimo 8 caracteres)",
                     visible = uiState.contrasenaVisible,
                     onAlternarVisible = onAlternarVisible,
                     error = uiState.errorContrasena
@@ -157,16 +191,16 @@ fun RegistroUsuarioEmpresaContent(
                 )
             }
 
-            Spacer(Modifier.height(Dimens.espacioGrande))
+            Spacer(Modifier.height(Dimens.espacioChico))
 
             Button(
                 onClick = onRegistrar,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(Dimens.espacioMedio)
+                    .height(50.dp)
             ) {
                 Text(
-                    text = "Registrar Representante de la Empresa",
+                    text = if (esRepresentante) "Registrar Representante" else "Registrar Usuario",
                     style = MaterialTheme.typography.titleMedium
                 )
             }
