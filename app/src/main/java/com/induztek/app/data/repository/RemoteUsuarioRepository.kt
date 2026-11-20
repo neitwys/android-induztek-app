@@ -99,10 +99,14 @@ class RemoteUsuarioRepository(
     private fun mensajeDelServidor(e: HttpException): String {
         val cuerpo = e.response()?.errorBody()?.string()
         val mensaje = try {
-            JSONObject(cuerpo ?: "").optString("message")
+            val json = JSONObject(cuerpo ?: "")
+            json.optString("error").ifBlank { json.optString("message") }
         } catch (ex: Exception) {
             ""
         }
-        return mensaje.ifBlank { "Error del servidor (${e.code()})" }
+        return mensaje.ifBlank {
+            if (e.code() == 401) "Correo o contraseña incorrectos"
+            else "Error del servidor (${e.code()})"
+        }
     }
 }
