@@ -15,7 +15,7 @@ class InduztekDbHelper(context: Context) :
 
     companion object {
         private const val NOMBRE_DB = "induztek.db"
-        private const val VERSION_DB = 9
+        private const val VERSION_DB = 10
 
         //----------------- TABLA ROLES -----------------//
         private const val TABLA_ROLES = "roles"
@@ -38,7 +38,7 @@ class InduztekDbHelper(context: Context) :
         private const val USU_NOMBRE = "nombre"
         private const val USU_CORREO = "correo"
         private const val USU_CONTRASENA = "contrasena"
-        private const val USU_ROL = "id_rol"
+        private const val USU_ROL = "id_rol"    
         private const val USU_TIPO_PREGUNTA = "tipo_pregunta_clave"
         private const val USU_RESPUESTA_PREGUNTA = "respuesta_pregunta_clave"
         private const val USU_FOTO_PERFIL = "foto_perfil"
