@@ -6,9 +6,11 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavType
@@ -16,8 +18,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.induztek.app.data.InduztekDbHelper
 import com.induztek.app.data.SesionPreferencias
+import com.induztek.app.data.repository.RemoteUsuarioRepository
 import com.induztek.app.model.Usuario
 import com.induztek.app.screens.HistorialEquiposScreen
 import com.induztek.app.screens.ListaYEliminarEmpresasScreen
@@ -30,6 +32,7 @@ import com.induztek.app.screens.RegistroEmpresaScreen
 import com.induztek.app.screens.RegistroPruebaScreen
 import com.induztek.app.screens.RegistroUsuarioEmpresaScreen
 import com.induztek.app.ui.theme.ModoTema
+import kotlinx.coroutines.launch
 
 @Composable
 fun AppNavegacion(
@@ -39,21 +42,28 @@ fun AppNavegacion(
     val navController = rememberNavController()
     val context = LocalContext.current
     val sesionPrefs = remember { SesionPreferencias(context) }
-    val dbHelper = remember { InduztekDbHelper(context) }
+    val usuarioRepo = remember { RemoteUsuarioRepository() }
+    val scope = rememberCoroutineScope()
 
     var usuarioActual by remember { mutableStateOf<Usuario?>(null) }
-
     val idUsuarioGuardado = sesionPrefs.leer()
-    val destinoInicial = if (idUsuarioGuardado != -1L) {
-        usuarioActual = dbHelper.buscarPorId(idUsuarioGuardado)
-        if (usuarioActual != null) Ruta.MenuPrincipal.ruta else Ruta.Login.ruta
-    } else {
-        Ruta.Login.ruta
+
+    LaunchedEffect(idUsuarioGuardado) {
+        if (idUsuarioGuardado != -1L && usuarioActual == null) {
+            try {
+                usuarioActual = usuarioRepo.buscarPorId(idUsuarioGuardado)
+                navController.navigate(Ruta.MenuPrincipal.ruta) {
+                    popUpTo(Ruta.Login.ruta) { inclusive = true }
+                }
+            } catch (_: Exception) {
+                sesionPrefs.borrar()
+            }
+        }
     }
 
     NavHost(
         navController = navController,
-        startDestination = destinoInicial,
+        startDestination = Ruta.Login.ruta,
         enterTransition = {
             slideInHorizontally(initialOffsetX = { 300 }, animationSpec = tween(250)) + fadeIn(tween(250))
         },
@@ -105,7 +115,7 @@ fun AppNavegacion(
                 onNavegarRegistroPrueba = { navController.navigate(Ruta.RegistroPrueba.ruta) },
                 onNavegarHistorialEquipos = { navController.navigate(Ruta.HistorialEquipos.ruta) },
                 onNavegarListaUsuarios = {
-                    navController.navigate("lista_usuarios") // <-- ¡Conecta la ruta aquí!
+                    navController.navigate("lista_usuarios")
                 },
                 onCerrarSesion = {
                     sesionPrefs.borrar()
@@ -172,7 +182,12 @@ fun AppNavegacion(
                 usuario = usuarioActual,
                 onVolver = {
                     usuarioActual?.id?.let { id ->
-                        usuarioActual = dbHelper.buscarPorId(id)
+                        scope.launch {
+                            try {
+                                usuarioActual = usuarioRepo.buscarPorId(id)
+                            } catch (_: Exception) {
+                            }
+                        }
                     }
                     navController.popBackStack()
                 },
@@ -185,6 +200,7 @@ fun AppNavegacion(
                 }
             )
         }
+
         // 9. Listado y Gestión de Usuarios (Solo Jefe Técnico)
         composable("lista_usuarios") {
             ListaYEliminarUsuariosScreen(
@@ -192,14 +208,13 @@ fun AppNavegacion(
                 onVolver = { navController.popBackStack() }
             )
         }
+
         // 10. Registro de Usuario Interno (Técnico, Ingeniero, Jefe)
         composable("registro_usuario_empresa") {
             RegistroUsuarioEmpresaScreen(
-                empresaId = 0L, // 0 indica que es usuario interno de Induztek
+                empresaId = 0L,
                 onVolver = { navController.popBackStack() }
             )
         }
-
-
     }
 }

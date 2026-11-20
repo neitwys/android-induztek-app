@@ -2,13 +2,15 @@ package com.induztek.app.viewmodel
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
-import com.induztek.app.data.InduztekDbHelper
+import androidx.lifecycle.viewModelScope
+import com.induztek.app.data.repository.RemoteUsuarioRepository
+import com.induztek.app.data.repository.UsuarioRepository
 import com.induztek.app.utils.PreguntasSeguridadUtils
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import java.util.Locale
+import kotlinx.coroutines.launch
 
 data class RecuperarContrasenaUiState(
     val correo: String = "",
@@ -19,9 +21,15 @@ data class RecuperarContrasenaUiState(
     val mensajeError: String? = null
 )
 
-class RecuperarContrasenaViewModel(application: Application) : AndroidViewModel(application) {
+class RecuperarContrasenaViewModel(
+    application: Application,
+    private val usuarioRepository: UsuarioRepository
+) : AndroidViewModel(application) {
 
-    private val dbHelper = InduztekDbHelper(application)
+    constructor(application: Application) : this(
+        application = application,
+        usuarioRepository = RemoteUsuarioRepository()
+    )
 
     private val _uiState = MutableStateFlow(RecuperarContrasenaUiState())
     val uiState: StateFlow<RecuperarContrasenaUiState> = _uiState.asStateFlow()
@@ -55,20 +63,23 @@ class RecuperarContrasenaViewModel(application: Application) : AndroidViewModel(
             return
         }
 
-        val usuario = dbHelper.buscarPorCorreo(estado.correo.trim())
-        if (usuario == null) {
-            _uiState.update { it.copy(mensajeError = "El correo ingresado no se encuentra registrado.") }
-            return
-        }
-
-        _uiState.update {
-            it.copy(
-                preguntaSeguridad = PreguntasSeguridadUtils.obtenerTextoPorId(usuario.tipoPreguntaClave),
-                respuestaPregunta = "",
-                nuevaContrasena = "",
-                mensajeError = null,
-                mensajeExito = null
-            )
+        viewModelScope.launch {
+            try {
+                val tipoPregunta = usuarioRepository.obtenerPreguntaSeguridad(estado.correo.trim())
+                _uiState.update {
+                    it.copy(
+                        preguntaSeguridad = PreguntasSeguridadUtils.obtenerTextoPorId(tipoPregunta),
+                        respuestaPregunta = "",
+                        nuevaContrasena = "",
+                        mensajeError = null,
+                        mensajeExito = null
+                    )
+                }
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(mensajeError = e.message ?: "El correo ingresado no se encuentra registrado.")
+                }
+            }
         }
     }
 
@@ -80,33 +91,28 @@ class RecuperarContrasenaViewModel(application: Application) : AndroidViewModel(
             return
         }
 
-        val usuario = dbHelper.buscarPorCorreo(estado.correo.trim())
-        if (usuario == null) {
-            _uiState.update { it.copy(mensajeError = "El correo ingresado no se encuentra registrado.") }
-            return
-        }
-
-        val respuestaIngresada = estado.respuestaPregunta.trim().lowercase(Locale.ROOT)
-        val respuestaRegistrada = usuario.respuestaPreguntaClave.trim().lowercase(Locale.ROOT)
-        if (respuestaIngresada != respuestaRegistrada) {
-            _uiState.update { it.copy(mensajeError = "Respuesta incorrecta.") }
-            return
-        }
-
-        val filasAfectadas = dbHelper.actualizarContrasena(usuario.id, estado.nuevaContrasena)
-        if (filasAfectadas > 0) {
-            _uiState.update {
-                it.copy(
-                    mensajeExito = "Contraseña actualizada con éxito. Ya puede iniciar sesión con su nueva clave.",
-                    mensajeError = null,
-                    correo = "",
-                    preguntaSeguridad = null,
-                    respuestaPregunta = "",
-                    nuevaContrasena = ""
+        viewModelScope.launch {
+            try {
+                usuarioRepository.recuperarContrasena(
+                    correo = estado.correo.trim(),
+                    respuestaSeguridad = estado.respuestaPregunta,
+                    nuevaContrasenaPlana = estado.nuevaContrasena
                 )
+                _uiState.update {
+                    it.copy(
+                        mensajeExito = "Contraseña actualizada con éxito. Ya puede iniciar sesión con su nueva clave.",
+                        mensajeError = null,
+                        correo = "",
+                        preguntaSeguridad = null,
+                        respuestaPregunta = "",
+                        nuevaContrasena = ""
+                    )
+                }
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(mensajeError = e.message ?: "Error al actualizar la contraseña.")
+                }
             }
-        } else {
-            _uiState.update { it.copy(mensajeError = "Error al actualizar la contraseña.") }
         }
     }
 }

@@ -3,24 +3,25 @@ package com.induztek.app.viewmodel
 import android.app.Application
 import android.util.Patterns
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
 import com.induztek.app.data.repository.AuthRepository
-import com.induztek.app.data.repository.LocalAuthRepository
+import com.induztek.app.data.repository.RemoteAuthRepository
 import com.induztek.app.model.LoginUiState
 import com.induztek.app.model.Usuario
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 class LoginViewModel(
     application: Application,
     private val authRepository: AuthRepository
 ) : AndroidViewModel(application) {
 
-    // Constructor secundario para que viewModel() siga funcionando sin cambios en LoginScreen
     constructor(application: Application) : this(
         application = application,
-        authRepository = LocalAuthRepository(application)
+        authRepository = RemoteAuthRepository()
     )
 
     private val _uiState = MutableStateFlow(LoginUiState())
@@ -63,19 +64,20 @@ class LoginViewModel(
             return
         }
 
-        val usuarioAutenticado = authRepository.autenticar(estado.correo, estado.contrasena)
-
-        if (usuarioAutenticado == null) {
-            _uiState.update {
-                it.copy(
-                    errorCorreo = null,
-                    errorContrasena = null,
-                    errorGeneral = "Correo o contraseña incorrectos."
-                )
+        viewModelScope.launch {
+            _uiState.update { it.copy(cargando = true, errorGeneral = null) }
+            try {
+                val usuarioAutenticado = authRepository.autenticar(estado.correo, estado.contrasena)
+                _uiState.update { it.copy(cargando = false) }
+                onExito(usuarioAutenticado)
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        cargando = false,
+                        errorGeneral = e.message ?: "Correo o contraseña incorrectos"
+                    )
+                }
             }
-            return
         }
-
-        onExito(usuarioAutenticado)
     }
 }

@@ -3,13 +3,15 @@ package com.induztek.app.viewmodel
 import android.app.Application
 import android.util.Patterns
 import androidx.lifecycle.AndroidViewModel
-import com.induztek.app.data.repository.LocalUsuarioRepository
+import androidx.lifecycle.viewModelScope
+import com.induztek.app.data.repository.RemoteUsuarioRepository
 import com.induztek.app.data.repository.UsuarioRepository
 import com.induztek.app.model.RegistroUsuarioEmpresaUiState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 class RegistroUsuarioEmpresaViewModel(
     application: Application,
@@ -18,7 +20,7 @@ class RegistroUsuarioEmpresaViewModel(
 
     constructor(application: Application) : this(
         application = application,
-        usuarioRepository = LocalUsuarioRepository(application)
+        usuarioRepository = RemoteUsuarioRepository()
     )
 
     private val _uiState = MutableStateFlow(RegistroUsuarioEmpresaUiState())
@@ -110,26 +112,27 @@ class RegistroUsuarioEmpresaViewModel(
         }
 
         val empresaFk = if (estado.empresaId > 0L) estado.empresaId else null
-        val rolFinal = if (estado.empresaId > 0L) 4 else estado.rolIdSeleccionado
+        val rolFinal = if (estado.empresaId > 0L) 4L else estado.rolIdSeleccionado.toLong()
 
-        val exitoDb = usuarioRepository.registrarUsuario(
-            nombre = estado.nombre,
-            correo = estado.correo,
-            contrasenaPlana = estado.contrasena,
-            tipoPregunta = estado.tipoPreguntaClave,
-            respuestaPregunta = estado.respuestaPreguntaClave,
-            rolId = rolFinal,
-            empresaId = empresaFk
-        )
-
-        if (exitoDb) {
-            _uiState.update { it.copy(registroExitoso = true) }
-        } else {
-            _uiState.update {
-                it.copy(
-                    errorCorreo = "El correo ya se encuentra registrado",
-                    registroExitoso = false
+        viewModelScope.launch {
+            try {
+                usuarioRepository.registrarUsuario(
+                    nombre = estado.nombre,
+                    correo = estado.correo,
+                    contrasenaPlana = estado.contrasena,
+                    tipoPregunta = estado.tipoPreguntaClave,
+                    respuestaPregunta = estado.respuestaPreguntaClave,
+                    rolId = rolFinal,
+                    empresaId = empresaFk
                 )
+                _uiState.update { it.copy(registroExitoso = true) }
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        errorCorreo = e.message ?: "No se pudo registrar el usuario",
+                        registroExitoso = false
+                    )
+                }
             }
         }
     }

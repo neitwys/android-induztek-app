@@ -2,12 +2,14 @@ package com.induztek.app.viewmodel
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
-import com.induztek.app.data.repository.LocalUsuarioRepository
+import androidx.lifecycle.viewModelScope
+import com.induztek.app.data.repository.RemoteUsuarioRepository
 import com.induztek.app.data.repository.UsuarioRepository
 import com.induztek.app.model.Usuario
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
 class ListaYEliminarUsuariosViewModel(
     application: Application,
@@ -16,7 +18,7 @@ class ListaYEliminarUsuariosViewModel(
 
     constructor(application: Application) : this(
         application = application,
-        usuarioRepository = LocalUsuarioRepository(application)
+        usuarioRepository = RemoteUsuarioRepository()
     )
 
     private val _filtro = MutableStateFlow("")
@@ -30,17 +32,23 @@ class ListaYEliminarUsuariosViewModel(
     }
 
     private fun recargar() {
-        val todas = usuarioRepository.listarUsuarios()
-        val busqueda = _filtro.value.trim().lowercase()
+        viewModelScope.launch {
+            try {
+                val todas = usuarioRepository.listarUsuarios()
+                val busqueda = _filtro.value.trim().lowercase()
 
-        _usuarios.value = if (busqueda.isEmpty()) {
-            todas
-        } else {
-            todas.filter {
-                it.nombre.lowercase().contains(busqueda) ||
-                        it.correo.lowercase().contains(busqueda) ||
-                        it.rolNombre.lowercase().contains(busqueda) ||
-                        (it.empresaNombre?.lowercase()?.contains(busqueda) == true)
+                _usuarios.value = if (busqueda.isEmpty()) {
+                    todas
+                } else {
+                    todas.filter {
+                        it.nombre.lowercase().contains(busqueda) ||
+                                it.correo.lowercase().contains(busqueda) ||
+                                it.rolNombre.lowercase().contains(busqueda) ||
+                                (it.empresaNombre?.lowercase()?.contains(busqueda) == true)
+                    }
+                }
+            } catch (_: Exception) {
+                _usuarios.value = emptyList()
             }
         }
     }
@@ -51,7 +59,12 @@ class ListaYEliminarUsuariosViewModel(
     }
 
     fun eliminar(usuario: Usuario) {
-        usuarioRepository.eliminarUsuario(usuario.id)
-        recargar()
+        viewModelScope.launch {
+            try {
+                usuarioRepository.eliminarUsuario(usuario.id)
+                recargar()
+            } catch (_: Exception) {
+            }
+        }
     }
 }

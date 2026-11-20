@@ -4,16 +4,18 @@ import android.app.Application
 import android.net.Uri
 import android.util.Patterns
 import androidx.lifecycle.AndroidViewModel
-
-import com.induztek.app.data.repository.LocalUsuarioRepository
+import androidx.lifecycle.viewModelScope
+import com.induztek.app.data.repository.AvatarRepository
+import com.induztek.app.data.repository.RemoteUsuarioRepository
 import com.induztek.app.data.repository.UsuarioRepository
 import com.induztek.app.model.Usuario
-import com.induztek.app.utils.ImagenUtils
+import com.induztek.app.utils.ConvertidorImagenUtils
+import com.induztek.app.utils.PreguntasSeguridadUtils
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import java.io.File
+import kotlinx.coroutines.launch
 
 data class PerfilUiState(
     val usuario: Usuario? = null,
@@ -43,12 +45,14 @@ data class PerfilUiState(
 
 class PerfilViewModel(
     application: Application,
-    private val usuarioRepository: UsuarioRepository
+    private val usuarioRepository: UsuarioRepository,
+    private val avatarRepository: AvatarRepository
 ) : AndroidViewModel(application) {
 
     constructor(application: Application) : this(
         application = application,
-        usuarioRepository = LocalUsuarioRepository(application)
+        usuarioRepository = RemoteUsuarioRepository(),
+        avatarRepository = AvatarRepository()
     )
 
     private val _uiState = MutableStateFlow(PerfilUiState())
@@ -57,27 +61,30 @@ class PerfilViewModel(
     fun cargarDatosUsuario(usuario: Usuario?) {
         if (usuario == null) return
 
-        val usuarioBD = usuarioRepository.buscarPorId(usuario.id) ?: usuario
-        val fotoUriCargada = usuarioBD.fotoPerfilPath?.let { path ->
-            Uri.fromFile(File(path))
-        }
+        // Muestra de inmediato los datos en memoria mientras refresca desde el servidor
+        aplicarUsuarioEnEstado(usuario)
 
-        _uiState.update {
-            it.copy(
-                usuario = usuarioBD,
-                fotoUri = fotoUriCargada,
-                nombreEditado = usuarioBD.nombre,
-                correoEditado = usuarioBD.correo,
-                textoPreguntaSeguridad = obtenerTextoPregunta(usuarioBD.tipoPreguntaClave)
-            )
+        viewModelScope.launch {
+            try {
+                val usuarioServidor = usuarioRepository.buscarPorId(usuario.id)
+                aplicarUsuarioEnEstado(usuarioServidor)
+            } catch (_: Exception) {
+                // Si falla la red, mantiene los datos ya cargados en memoria
+            }
         }
     }
 
-    private fun obtenerTextoPregunta(tipoPregunta: Int): String = when (tipoPregunta) {
-        1 -> "¿Cuál es el nombre de tu primera mascota?"
-        2 -> "¿Cuál es tu banda o artista favorito?"
-        3 -> "¿Cuál es tu color favorito?"
-        else -> "Respuesta de seguridad registrada"
+    private fun aplicarUsuarioEnEstado(usuario: Usuario) {
+        val fotoUriCargada = usuario.fotoPerfilPath?.let { url -> Uri.parse(url) }
+        _uiState.update {
+            it.copy(
+                usuario = usuario,
+                fotoUri = fotoUriCargada,
+                nombreEditado = usuario.nombre,
+                correoEditado = usuario.correo,
+                textoPreguntaSeguridad = PreguntasSeguridadUtils.obtenerTextoPorId(usuario.tipoPreguntaClave)
+            )
+        }
     }
 
     // --- EDITAR PERFIL ---
@@ -126,28 +133,25 @@ class PerfilViewModel(
             return
         }
 
-        val actualizado = usuarioRepository.actualizarDatosPerfil(
-            idUsuario = usuarioActual.id,
-            nombre = estado.nombreEditado,
-            correo = estado.correoEditado
-        )
-
-        if (actualizado) {
-            val usuarioRecargado = usuarioRepository.buscarPorId(usuarioActual.id) ?: usuarioActual.copy(
-                nombre = estado.nombreEditado.trim(),
-                correo = estado.correoEditado.trim().lowercase()
-            )
-            _uiState.update {
-                it.copy(
-                    usuario = usuarioRecargado,
-                    editandoPerfil = false,
-                    mensajeExito = "Perfil actualizado correctamente",
-                    mensajeError = null
+        viewModelScope.launch {
+            try {
+                val usuarioActualizado = usuarioRepository.actualizarDatosPerfil(
+                    idUsuario = usuarioActual.id,
+                    nombre = estado.nombreEditado,
+                    correo = estado.correoEditado
                 )
-            }
-        } else {
-            _uiState.update {
-                it.copy(errorCorreo = "Este correo ya está en uso por otra cuenta")
+                _uiState.update {
+                    it.copy(
+                        usuario = usuarioActualizado,
+                        editandoPerfil = false,
+                        mensajeExito = "Perfil actualizado correctamente",
+                        mensajeError = null
+                    )
+                }
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(errorCorreo = e.message ?: "Este correo ya está en uso por otra cuenta")
+                }
             }
         }
     }
@@ -222,19 +226,16 @@ class PerfilViewModel(
             return
         }
 
-        val resultado = usuarioRepository.cambiarContrasena(
-            idUsuario = usuarioActual.id,
-            contrasenaActualPlana = estado.claveActual,
-            respuestaSeguridad = estado.respuestaSeguridad,
-            nuevaContrasenaPlana = estado.claveNueva
-        )
-
-        resultado.fold(
-            onSuccess = {
-                val usuarioRecargado = usuarioRepository.buscarPorId(usuarioActual.id) ?: usuarioActual
+        viewModelScope.launch {
+            try {
+                usuarioRepository.cambiarContrasena(
+                    idUsuario = usuarioActual.id,
+                    contrasenaActualPlana = estado.claveActual,
+                    respuestaSeguridad = estado.respuestaSeguridad,
+                    nuevaContrasenaPlana = estado.claveNueva
+                )
                 _uiState.update {
                     it.copy(
-                        usuario = usuarioRecargado,
                         cambiandoClave = false,
                         claveActual = "",
                         respuestaSeguridad = "",
@@ -244,45 +245,46 @@ class PerfilViewModel(
                         mensajeError = null
                     )
                 }
-            },
-            onFailure = { err ->
-                val mensaje = err.message ?: "Error al validar credenciales"
+            } catch (e: Exception) {
+                val mensaje = e.message ?: "Error al validar credenciales"
                 if (mensaje.contains("seguridad", ignoreCase = true) || mensaje.contains("respuesta", ignoreCase = true)) {
                     _uiState.update { it.copy(errorRespuestaSeguridad = mensaje) }
                 } else {
                     _uiState.update { it.copy(errorClaveActual = mensaje) }
                 }
             }
-
-        )
+        }
     }
 
-    // --- FOTO PERFIL ---
+    // --- FOTO PERFIL (formato MiRegistro: ConvertidorImagen -> AvatarRepository) ---
     fun actualizarFotoPerfil(uriOrigen: Uri?) {
         if (uriOrigen == null) return
-
+        val usuarioActual = _uiState.value.usuario ?: return
         val context = getApplication<Application>().applicationContext
-        val rutaPermanente = ImagenUtils.guardarImagenEnAlmacenamientoInterno(
-            context = context,
-            uriOrigen = uriOrigen,
-            prefijoNombre = "perfil_usuario"
-        )
 
-        if (rutaPermanente != null) {
-            val usuarioActual = _uiState.value.usuario
-            if (usuarioActual != null) {
-                usuarioRepository.actualizarFotoPerfil(usuarioActual.id, rutaPermanente)
+        viewModelScope.launch {
+            val bitmap = ConvertidorImagenUtils.desdeUri(context, uriOrigen)
+            if (bitmap == null) {
+                _uiState.update { it.copy(mensajeError = "No se pudo leer la imagen seleccionada") }
+                return@launch
             }
-            val uriArchivoGuardado = Uri.fromFile(File(rutaPermanente))
-            _uiState.update {
-                it.copy(
-                    fotoUri = uriArchivoGuardado,
-                    mensajeExito = "Foto de perfil actualizada correctamente"
-                )
-            }
-        } else {
-            _uiState.update {
-                it.copy(mensajeError = "No se pudo guardar la imagen localmente")
+
+            try {
+                val bytes = ConvertidorImagenUtils.aBytes(bitmap)
+                val usuarioActualizado = avatarRepository.subir(usuarioActual.id, bytes)
+                val nuevaUri = usuarioActualizado.fotoPerfilPath?.let { Uri.parse(it) }
+                _uiState.update {
+                    it.copy(
+                        usuario = usuarioActualizado,
+                        fotoUri = nuevaUri,
+                        mensajeExito = "Foto de perfil actualizada correctamente",
+                        mensajeError = null
+                    )
+                }
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(mensajeError = e.message ?: "No se pudo subir la foto al servidor")
+                }
             }
         }
     }
