@@ -327,7 +327,7 @@ class InduztekDbHelper(context: Context) :
             while (cursor.moveToNext()) {
                 lista.add(
                     EmpresaConInstalacion(
-                        idEmpresa = cursor.getLong(cursor.getColumnIndexOrThrow(EMP_ID)),
+                        id = cursor.getLong(cursor.getColumnIndexOrThrow(EMP_ID)),
                         razonSocial = cursor.getString(cursor.getColumnIndexOrThrow(EMP_RAZON_SOCIAL)),
                         rut = cursor.getString(cursor.getColumnIndexOrThrow(EMP_RUT)),
                         giro = cursor.getString(cursor.getColumnIndexOrThrow(EMP_GIRO)) ?: "",
@@ -502,7 +502,7 @@ class InduztekDbHelper(context: Context) :
 
 // Data class para listar empresas junto con sus instalaciones
 data class EmpresaConInstalacion(
-    val idEmpresa: Long,
+    val id: Long,
     val razonSocial: String,
     val rut: String,
     val giro: String,

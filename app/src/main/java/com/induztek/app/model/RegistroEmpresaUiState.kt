@@ -30,6 +30,8 @@ data class RegistroEmpresaUiState(
     val errorRegion: String? = null,
     val errorObservacionesAcceso: String? = null,
 
+    val errorGlobal: String? = null,
+
     // Resultado del formulario
     val idEmpresaGenerado: Long? = null,
     val registroExitoso: Boolean = false

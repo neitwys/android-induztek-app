@@ -114,6 +114,7 @@ fun AppNavegacion(
                 onNavegarListaYEliminarEmpresas = { navController.navigate(Ruta.ListaYEliminarEmpresas.ruta) },
                 onNavegarRegistroPrueba = { navController.navigate(Ruta.RegistroPrueba.ruta) },
                 onNavegarHistorialEquipos = { navController.navigate(Ruta.HistorialEquipos.ruta) },
+                onNavegarMiEmpresa = { navController.navigate(Ruta.MiEmpresa.ruta) },
                 onNavegarListaUsuarios = {
                     navController.navigate("lista_usuarios")
                 },
@@ -213,6 +214,17 @@ fun AppNavegacion(
         composable("registro_usuario_empresa") {
             RegistroUsuarioEmpresaScreen(
                 empresaId = 0L,
+                onVolver = { navController.popBackStack() }
+            )
+        }
+
+        // 11. Ver su propia empresa.
+        composable(Ruta.MiEmpresa.ruta) {
+            val idEmpresaDelUsuario = usuarioActual?.empresaId ?: 0L
+
+            com.induztek.app.screens.MiEmpresaScreen(
+                empresaId = idEmpresaDelUsuario,
+                viewModel = androidx.lifecycle.viewmodel.compose.viewModel(),
                 onVolver = { navController.popBackStack() }
             )
         }

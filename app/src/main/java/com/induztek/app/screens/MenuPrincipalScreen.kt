@@ -56,6 +56,7 @@ fun MenuPrincipalScreen(
     onNavegarRegistroPrueba: () -> Unit = {},
     onNavegarHistorialEquipos: () -> Unit = {},
     onCerrarSesion: () -> Unit = {},
+    onNavegarMiEmpresa: () -> Unit = {},
     onNavegarListaUsuarios: () -> Unit = {}
 ) {
     LaunchedEffect(usuario) {
@@ -75,6 +76,7 @@ fun MenuPrincipalScreen(
         onNavegarRegistroPrueba = onNavegarRegistroPrueba,
         onNavegarHistorialEquipos = onNavegarHistorialEquipos,
         onCerrarSesion = onCerrarSesion,
+        onNavegarMiEmpresa = onNavegarMiEmpresa,
         onNavegarListaUsuarios = onNavegarListaUsuarios
 
     )
@@ -94,6 +96,7 @@ fun MenuPrincipalContent(
     onNavegarRegistroPrueba: () -> Unit = {},
     onNavegarHistorialEquipos: () -> Unit = {},
     onCerrarSesion: () -> Unit = {},
+    onNavegarMiEmpresa: () -> Unit = {},
     onNavegarListaUsuarios: () -> Unit = {}
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -125,6 +128,15 @@ fun MenuPrincipalContent(
                         modifier = Modifier.clickable {
                             scope.launch { drawerState.close() }
                             onNavegarPerfil()
+                        }
+                    )
+
+                    ListItem(
+                        headlineContent = { Text("Mi Empresa") },
+                        leadingContent = { Icon(painter = painterResource(R.drawable.ic_instalacion), contentDescription = null) }, // Puedes cambiar el ícono
+                        modifier = Modifier.clickable {
+                            scope.launch { drawerState.close() }
+                            onNavegarMiEmpresa()
                         }
                     )
 

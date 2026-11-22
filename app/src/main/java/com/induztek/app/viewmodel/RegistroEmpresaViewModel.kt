@@ -3,14 +3,16 @@ package com.induztek.app.viewmodel
 import android.app.Application
 import android.util.Patterns
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
 import com.induztek.app.data.repository.EmpresaRepository
-import com.induztek.app.data.repository.LocalEmpresaRepository
+import com.induztek.app.data.repository.RemoteEmpresaRepository
 import com.induztek.app.model.RegistroEmpresaUiState
 import com.induztek.app.utils.ValidacionUtils
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 class RegistroEmpresaViewModel(
     application: Application,
@@ -19,7 +21,7 @@ class RegistroEmpresaViewModel(
 
     constructor(application: Application) : this(
         application = application,
-        empresaRepository = LocalEmpresaRepository(application)
+        empresaRepository = RemoteEmpresaRepository()
     )
 
     private val _uiState = MutableStateFlow(RegistroEmpresaUiState())
@@ -178,34 +180,38 @@ class RegistroEmpresaViewModel(
 
         val rutFormateado = ValidacionUtils.formatearRut(estado.rut)
 
-        val idGenerado = empresaRepository.registrarEmpresaConInstalacion(
-            razonSocial = estado.razonSocial.trim(),
-            rut = rutFormateado,
-            giro = estado.giro.trim(),
-            contacto = estado.contacto.trim(),
-            telefono = estado.telefono.trim(),
-            correo = estado.correo.trim().lowercase(),
-            nombreInstalacion = estado.nombreInstalacion.trim(),
-            ubicacion = estado.ubicacion.trim(),
-            comuna = estado.comuna.trim(),
-            region = estado.region.trim(),
-            observaciones = estado.observacionesAcceso.trim()
-        )
+        viewModelScope.launch {
+            val resultado = empresaRepository.registrarEmpresaConInstalacion(
+                razonSocial = estado.razonSocial.trim(),
+                rut = rutFormateado,
+                giro = estado.giro.trim(),
+                contacto = estado.contacto.trim(),
+                telefono = estado.telefono.trim(),
+                correo = estado.correo.trim().lowercase(),
+                nombreInstalacion = estado.nombreInstalacion.trim(),
+                ubicacion = estado.ubicacion.trim(),
+                comuna = estado.comuna.trim(),
+                region = estado.region.trim(),
+                observaciones = estado.observacionesAcceso.trim()
+            )
 
-        if (idGenerado != -1L) {
-            _uiState.update {
-                it.copy(
-                    rut = rutFormateado,
-                    idEmpresaGenerado = idGenerado,
-                    registroExitoso = true
-                )
-            }
-        } else {
-            _uiState.update {
-                it.copy(
-                    errorRut = "El RUT ya se encuentra registrado",
-                    registroExitoso = false
-                )
+            resultado.onSuccess { idGenerado ->
+                _uiState.update {
+                    it.copy(
+                        rut = rutFormateado,
+                        idEmpresaGenerado = idGenerado,
+                        registroExitoso = true,
+                        errorGlobal = null
+                    )
+                }
+            }.onFailure { excepcion ->
+                val mensajeError = excepcion.message ?: "Error desconocido"
+
+                if (mensajeError.contains("RUT")) {
+                    _uiState.update { it.copy(errorRut = mensajeError, registroExitoso = false) }
+                } else {
+                    _uiState.update { it.copy(errorGlobal = mensajeError, registroExitoso = false) }
+                }
             }
         }
     }

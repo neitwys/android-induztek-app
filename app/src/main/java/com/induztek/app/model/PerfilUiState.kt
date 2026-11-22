@@ -18,6 +18,7 @@ data class PerfilUiState(
     val confirmarClaveNueva: String = "",
     val errorConfirmarClave: String? = null,
     val clavesVisibles: Boolean = false,
+    val nombreEmpresa: String = "Cargando empresa...",
     val mensajeExito: String? = null,
     val mensajeError: String? = null
 )

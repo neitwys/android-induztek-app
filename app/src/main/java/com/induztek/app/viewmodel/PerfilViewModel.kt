@@ -6,6 +6,8 @@ import android.util.Patterns
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.induztek.app.data.repository.AvatarRepository
+import com.induztek.app.data.repository.EmpresaRepository
+import com.induztek.app.data.repository.RemoteEmpresaRepository
 import com.induztek.app.data.repository.RemoteUsuarioRepository
 import com.induztek.app.data.repository.UsuarioRepository
 import com.induztek.app.model.PerfilUiState
@@ -20,13 +22,15 @@ import kotlinx.coroutines.launch
 class PerfilViewModel(
     application: Application,
     private val usuarioRepository: UsuarioRepository,
-    private val avatarRepository: AvatarRepository
+    private val avatarRepository: AvatarRepository,
+    private val empresaRepository: EmpresaRepository
 ) : AndroidViewModel(application) {
 
     constructor(application: Application) : this(
         application = application,
         usuarioRepository = RemoteUsuarioRepository(),
-        avatarRepository = AvatarRepository()
+        avatarRepository = AvatarRepository(),
+        empresaRepository = RemoteEmpresaRepository()
     )
 
     private val _uiState = MutableStateFlow(PerfilUiState())
@@ -37,6 +41,18 @@ class PerfilViewModel(
 
         aplicarUsuarioEnEstado(usuario)
 
+        val idDeLaEmpresa = usuario.empresaId
+
+        if (idDeLaEmpresa != null) {
+            viewModelScope.launch {
+                val resultado = empresaRepository.obtenerEmpresaPorId(idDeLaEmpresa)
+                resultado.onSuccess { empresa ->
+                    _uiState.update { it.copy(nombreEmpresa = empresa.razonSocial) }
+                }.onFailure {
+                    _uiState.update { it.copy(nombreEmpresa = "Empresa no encontrada") }
+                }
+            }
+        }
         viewModelScope.launch {
             try {
                 val usuarioServidor = usuarioRepository.buscarPorId(usuario.id)

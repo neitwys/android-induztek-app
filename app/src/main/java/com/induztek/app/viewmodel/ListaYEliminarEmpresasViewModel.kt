@@ -44,7 +44,7 @@ class ListaYEliminarEmpresasViewModel(application: Application) : AndroidViewMod
     }
 
     fun eliminar(empresa: EmpresaConInstalacion) {
-        db.eliminarEmpresa(empresa.idEmpresa)
+        db.eliminarEmpresa(empresa.id)
         recargar()
     }
 

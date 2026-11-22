@@ -14,4 +14,5 @@ sealed class Ruta(val ruta: String) {
     data object ListaYEliminarEmpresas : Ruta("lista_y_eliminar_empresas")
     object RegistroPrueba : Ruta("registro_prueba")
     object HistorialEquipos : Ruta("historial_equipos")
+    data object MiEmpresa : Ruta("mi_empresa")
 }

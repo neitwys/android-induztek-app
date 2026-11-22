@@ -130,7 +130,7 @@ fun ListaYEliminarEmpresasContent(
                 contentPadding = PaddingValues(Dimens.espacioMedio),
                 verticalArrangement = Arrangement.spacedBy(Dimens.espacioChico)
             ) {
-                items(empresas, key = { it.idEmpresa }) { empresa ->
+                items(empresas, key = { it.id }) { empresa ->
                     Card {
                         ListItem(
                             overlineContent = { Text("RUT: ${empresa.rut} | Giro: ${empresa.giro}") },

@@ -1,10 +1,12 @@
 package com.induztek.app.data.repository
 
 import android.content.Context
+import com.induztek.app.data.EmpresaConInstalacion
 import com.induztek.app.data.InduztekDbHelper
+import com.induztek.app.data.remote.EmpresaResponse
 
 interface EmpresaRepository {
-    fun registrarEmpresaConInstalacion(
+    suspend fun registrarEmpresaConInstalacion(
         razonSocial: String,
         rut: String,
         giro: String,
@@ -16,37 +18,11 @@ interface EmpresaRepository {
         comuna: String,
         region: String,
         observaciones: String
-    ): Long
-}
+    ): Result<Long>
 
-class LocalEmpresaRepository(context: Context) : EmpresaRepository {
-    private val dbHelper = InduztekDbHelper(context.applicationContext)
+    suspend fun listarEmpresas(): List<EmpresaConInstalacion>
 
-    override fun registrarEmpresaConInstalacion(
-        razonSocial: String,
-        rut: String,
-        giro: String,
-        contacto: String,
-        telefono: String,
-        correo: String,
-        nombreInstalacion: String,
-        ubicacion: String,
-        comuna: String,
-        region: String,
-        observaciones: String
-    ): Long {
-        return dbHelper.insertarEmpresaConInstalacion(
-            razonSocial = razonSocial,
-            rut = rut,
-            giro = giro,
-            contacto = contacto,
-            telefono = telefono,
-            correo = correo,
-            nombreInstalacion = nombreInstalacion,
-            ubicacion = ubicacion,
-            comuna = comuna,
-            region = region,
-            observaciones = observaciones
-        )
-    }
+    suspend fun eliminarEmpresa(id: Long): Boolean
+
+    suspend fun obtenerEmpresaPorId(id: Long): Result<EmpresaResponse>
 }

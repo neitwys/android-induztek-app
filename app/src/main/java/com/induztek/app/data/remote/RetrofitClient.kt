@@ -20,4 +20,8 @@ object RetrofitClient {
     val avatarApi: AvatarApi by lazy {
         crear(URL_BASE).create(AvatarApi::class.java)
     }
+
+    val clienteApi: ClienteApi by lazy {
+        crear(URL_BASE).create(ClienteApi::class.java)
+    }
 }
