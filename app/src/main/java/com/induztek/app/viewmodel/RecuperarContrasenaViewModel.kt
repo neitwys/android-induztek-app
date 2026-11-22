@@ -1,11 +1,11 @@
 package com.induztek.app.viewmodel
 
 import android.app.Application
+import android.util.Patterns
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.induztek.app.data.repository.RemoteUsuarioRepository
 import com.induztek.app.data.repository.UsuarioRepository
-import com.induztek.app.utils.PreguntasSeguridadUtils
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -14,9 +14,10 @@ import kotlinx.coroutines.launch
 
 data class RecuperarContrasenaUiState(
     val correo: String = "",
-    val preguntaSeguridad: String? = null,
-    val respuestaPregunta: String = "",
+    val codigoEnviado: Boolean = false,
+    val codigo: String = "",
     val nuevaContrasena: String = "",
+    val cargando: Boolean = false,
     val mensajeExito: String? = null,
     val mensajeError: String? = null
 )
@@ -38,8 +39,8 @@ class RecuperarContrasenaViewModel(
         _uiState.update {
             it.copy(
                 correo = correo,
-                preguntaSeguridad = null,
-                respuestaPregunta = "",
+                codigoEnviado = false,
+                codigo = "",
                 nuevaContrasena = "",
                 mensajeError = null,
                 mensajeExito = null
@@ -47,37 +48,37 @@ class RecuperarContrasenaViewModel(
         }
     }
 
-    fun onRespuestaPreguntaCambia(respuesta: String) {
-        _uiState.update { it.copy(respuestaPregunta = respuesta, mensajeError = null, mensajeExito = null) }
+    fun onCodigoCambia(codigo: String) {
+        if (codigo.length <= 6 && codigo.all { it.isDigit() }) {
+            _uiState.update { it.copy(codigo = codigo, mensajeError = null, mensajeExito = null) }
+        }
     }
 
     fun onNuevaContrasenaCambia(clave: String) {
         _uiState.update { it.copy(nuevaContrasena = clave, mensajeError = null, mensajeExito = null) }
     }
 
-    fun buscarPreguntaSeguridad() {
-        val estado = _uiState.value
-
-        if (estado.correo.isBlank()) {
-            _uiState.update { it.copy(mensajeError = "Ingrese su correo electrónico.") }
+    fun enviarCodigo() {
+        val correo = _uiState.value.correo.trim()
+        if (correo.isBlank() || !Patterns.EMAIL_ADDRESS.matcher(correo).matches()) {
+            _uiState.update { it.copy(mensajeError = "Ingrese un correo electrónico válido.") }
             return
         }
 
         viewModelScope.launch {
+            _uiState.update { it.copy(cargando = true, mensajeError = null, mensajeExito = null) }
             try {
-                val tipoPregunta = usuarioRepository.obtenerPreguntaSeguridad(estado.correo.trim())
+                usuarioRepository.solicitarCodigoRecuperacion(correo)
                 _uiState.update {
                     it.copy(
-                        preguntaSeguridad = PreguntasSeguridadUtils.obtenerTextoPorId(tipoPregunta),
-                        respuestaPregunta = "",
-                        nuevaContrasena = "",
-                        mensajeError = null,
-                        mensajeExito = null
+                        cargando = false,
+                        codigoEnviado = true,
+                        mensajeExito = "Enviamos un código de 6 dígitos a tu correo. Revisa tu bandeja (válido por 10 minutos)."
                     )
                 }
             } catch (e: Exception) {
                 _uiState.update {
-                    it.copy(mensajeError = e.message ?: "El correo ingresado no se encuentra registrado.")
+                    it.copy(cargando = false, mensajeError = e.message ?: "No se pudo enviar el código.")
                 }
             }
         }
@@ -85,32 +86,36 @@ class RecuperarContrasenaViewModel(
 
     fun restablecerContrasena() {
         val estado = _uiState.value
-
-        if (estado.respuestaPregunta.isBlank() || estado.nuevaContrasena.isBlank()) {
-            _uiState.update { it.copy(mensajeError = "Por favor complete todos los campos.") }
+        if (estado.codigo.length != 6) {
+            _uiState.update { it.copy(mensajeError = "Ingrese el código de 6 dígitos enviado a su correo.") }
+            return
+        }
+        if (estado.nuevaContrasena.trim().length < 8) {
+            _uiState.update { it.copy(mensajeError = "La nueva contraseña debe tener al menos 8 caracteres.") }
             return
         }
 
         viewModelScope.launch {
+            _uiState.update { it.copy(cargando = true, mensajeError = null, mensajeExito = null) }
             try {
                 usuarioRepository.recuperarContrasena(
                     correo = estado.correo.trim(),
-                    respuestaSeguridad = estado.respuestaPregunta,
+                    codigo = estado.codigo,
                     nuevaContrasenaPlana = estado.nuevaContrasena
                 )
                 _uiState.update {
                     it.copy(
-                        mensajeExito = "Contraseña actualizada con éxito. Ya puede iniciar sesión con su nueva clave.",
-                        mensajeError = null,
+                        cargando = false,
+                        mensajeExito = "Contraseña actualizada con éxito. Ya puede iniciar sesión.",
                         correo = "",
-                        preguntaSeguridad = null,
-                        respuestaPregunta = "",
+                        codigoEnviado = false,
+                        codigo = "",
                         nuevaContrasena = ""
                     )
                 }
             } catch (e: Exception) {
                 _uiState.update {
-                    it.copy(mensajeError = e.message ?: "Error al actualizar la contraseña.")
+                    it.copy(cargando = false, mensajeError = e.message ?: "Error al actualizar la contraseña.")
                 }
             }
         }

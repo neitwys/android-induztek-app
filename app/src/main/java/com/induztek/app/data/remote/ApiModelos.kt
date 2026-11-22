@@ -13,8 +13,6 @@ data class RegistroUsuarioRequest(
     val correo: String,
     val contrasena: String,
     val rol: Long,
-    val tipoPreguntaClave: Int,
-    val respuestaPreguntaClave: String,
     val fotoPerfil: String? = null,
     val empresaId: Long? = null
 )
@@ -26,18 +24,17 @@ data class ActualizarPerfilRequest(
 
 data class CambiarContrasenaRequest(
     val contrasenaActual: String,
-    val respuestaSeguridad: String,
     val nuevaContrasena: String
+)
+
+data class SolicitarCodigoRequest(
+    val correo: String
 )
 
 data class RecuperarContrasenaRequest(
     val correo: String,
-    val respuestaSeguridad: String,
+    val codigo: String,
     val nuevaContrasena: String
-)
-
-data class PreguntaSeguridadResponse(
-    val tipoPreguntaClave: Int
 )
 
 data class UsuarioResponse(
@@ -45,12 +42,10 @@ data class UsuarioResponse(
     val nombre: String,
     val correo: String,
     val rol: Long,
-    val tipoPreguntaClave: Int,
     val fotoPerfil: String?,
     val empresaId: Long?
 )
 
-// DTO de ms-autenticacion a modelo Usuario
 fun UsuarioResponse.aUsuario(): Usuario {
     val nombreRol = when (rol) {
         Rol.ID_TECNICO -> "Técnico de Terreno"
@@ -72,7 +67,7 @@ fun UsuarioResponse.aUsuario(): Usuario {
         contrasena = "",
         rolId = rol,
         rolNombre = nombreRol,
-        tipoPreguntaClave = tipoPreguntaClave,
+        tipoPreguntaClave = 0,
         respuestaPreguntaClave = "",
         empresaId = empresaId,
         fotoPerfilPath = urlCompletaFoto

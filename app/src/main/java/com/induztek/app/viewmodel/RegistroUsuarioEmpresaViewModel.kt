@@ -47,14 +47,6 @@ class RegistroUsuarioEmpresaViewModel(
         _uiState.update { it.copy(contrasena = valor, errorContrasena = null, registroExitoso = false) }
     }
 
-    fun onTipoPreguntaClaveCambia(valor: Int) {
-        _uiState.update { it.copy(tipoPreguntaClave = valor, errorRespuestaPregunta = null, registroExitoso = false) }
-    }
-
-    fun onRespuestaPreguntaClaveCambia(valor: String) {
-        _uiState.update { it.copy(respuestaPreguntaClave = valor, errorRespuestaPregunta = null, registroExitoso = false) }
-    }
-
     fun onAlternarVisibilidadContrasena() {
         _uiState.update { it.copy(contrasenaVisible = !it.contrasenaVisible) }
     }
@@ -77,34 +69,19 @@ class RegistroUsuarioEmpresaViewModel(
         else -> null
     }
 
-    private fun validarRespuestaPregunta(respuesta: String): String? = when {
-        respuesta.isBlank() -> "La respuesta de seguridad es obligatoria"
-        respuesta.trim().length < 2 -> "Ingrese una respuesta más descriptiva"
-        else -> null
-    }
-
     fun onRegistrar() {
         val estado = _uiState.value
 
         val errorNombre = validarNombre(estado.nombre)
         val errorCorreo = validarCorreo(estado.correo)
         val errorContrasena = validarContrasena(estado.contrasena)
-        val errorRespuestaPregunta = validarRespuestaPregunta(estado.respuestaPreguntaClave)
 
-        val hayErrores = listOf(
-            errorNombre,
-            errorCorreo,
-            errorContrasena,
-            errorRespuestaPregunta
-        ).any { it != null }
-
-        if (hayErrores) {
+        if (errorNombre != null || errorCorreo != null || errorContrasena != null) {
             _uiState.update {
                 it.copy(
                     errorNombre = errorNombre,
                     errorCorreo = errorCorreo,
                     errorContrasena = errorContrasena,
-                    errorRespuestaPregunta = errorRespuestaPregunta,
                     registroExitoso = false
                 )
             }
@@ -120,8 +97,6 @@ class RegistroUsuarioEmpresaViewModel(
                     nombre = estado.nombre,
                     correo = estado.correo,
                     contrasenaPlana = estado.contrasena,
-                    tipoPregunta = estado.tipoPreguntaClave,
-                    respuestaPregunta = estado.respuestaPreguntaClave,
                     rolId = rolFinal,
                     empresaId = empresaFk
                 )

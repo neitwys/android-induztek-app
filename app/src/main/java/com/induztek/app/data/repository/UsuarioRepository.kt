@@ -10,8 +10,6 @@ interface UsuarioRepository {
         nombre: String,
         correo: String,
         contrasenaPlana: String,
-        tipoPregunta: Int,
-        respuestaPregunta: String,
         rolId: Long,
         empresaId: Long? = null
     ): Usuario
@@ -19,13 +17,12 @@ interface UsuarioRepository {
     suspend fun cambiarContrasena(
         idUsuario: Long,
         contrasenaActualPlana: String,
-        respuestaSeguridad: String,
         nuevaContrasenaPlana: String
     )
-    suspend fun obtenerPreguntaSeguridad(correo: String): Int
+    suspend fun solicitarCodigoRecuperacion(correo: String)
     suspend fun recuperarContrasena(
         correo: String,
-        respuestaSeguridad: String,
+        codigo: String,
         nuevaContrasenaPlana: String
     )
 }

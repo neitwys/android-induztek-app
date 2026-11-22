@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -14,12 +15,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -43,10 +46,7 @@ fun RecuperarContrasenaScreen(
                 title = { Text("Recuperar Contraseña") },
                 navigationIcon = {
                     IconButton(onClick = onVolver) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_salir),
-                            contentDescription = "Volver"
-                        )
+                        Icon(painter = painterResource(R.drawable.ic_volver), contentDescription = "Volver")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -65,60 +65,66 @@ fun RecuperarContrasenaScreen(
                 .padding(Dimens.espacioGrande),
             verticalArrangement = Arrangement.spacedBy(Dimens.espacioMedio)
         ) {
-            TarjetaSeccion(titulo = "Restablecer Clave de Acceso") {
+            TarjetaSeccion(titulo = "Restablecer Clave por Correo") {
                 Column(verticalArrangement = Arrangement.spacedBy(Dimens.espacioChico)) {
                     Text(
-                        text = "Ingrese su correo corporativo registrado para validar su identidad.",
+                        text = "Ingresa tu correo registrado y te enviaremos un código de verificación.",
                         style = MaterialTheme.typography.bodyMedium
                     )
 
                     OutlinedTextField(
                         value = uiState.correo,
-                        onValueChange = { viewModel.onCorreoCambia(it) },
+                        onValueChange = viewModel::onCorreoCambia,
                         label = { Text("Correo Electrónico") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                         modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
+                        singleLine = true,
+                        enabled = !uiState.cargando
                     )
 
-                    if (uiState.preguntaSeguridad == null) {
+                    if (!uiState.codigoEnviado) {
                         Button(
-                            onClick = { viewModel.buscarPreguntaSeguridad() },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(50.dp)
+                            onClick = viewModel::enviarCodigo,
+                            enabled = !uiState.cargando,
+                            modifier = Modifier.fillMaxWidth().height(50.dp)
                         ) {
-                            Text("CONTINUAR")
+                            Text(if (uiState.cargando) "ENVIANDO CÓDIGO..." else "ENVIAR CÓDIGO AL CORREO")
                         }
                     } else {
-                        Text(
-                            text = uiState.preguntaSeguridad ?: "",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-
                         OutlinedTextField(
-                            value = uiState.respuestaPregunta,
-                            onValueChange = { viewModel.onRespuestaPreguntaCambia(it) },
-                            label = { Text("Respuesta") },
+                            value = uiState.codigo,
+                            onValueChange = viewModel::onCodigoCambia,
+                            label = { Text("Código de 6 dígitos") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             modifier = Modifier.fillMaxWidth(),
-                            singleLine = true
+                            singleLine = true,
+                            enabled = !uiState.cargando
                         )
 
                         OutlinedTextField(
                             value = uiState.nuevaContrasena,
-                            onValueChange = { viewModel.onNuevaContrasenaCambia(it) },
-                            label = { Text("Nueva Contraseña") },
+                            onValueChange = viewModel::onNuevaContrasenaCambia,
+                            label = { Text("Nueva Contraseña (mín. 8 caracteres)") },
                             visualTransformation = PasswordVisualTransformation(),
                             modifier = Modifier.fillMaxWidth(),
-                            singleLine = true
+                            singleLine = true,
+                            enabled = !uiState.cargando
                         )
 
                         Button(
-                            onClick = { viewModel.restablecerContrasena() },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(50.dp)
+                            onClick = viewModel::restablecerContrasena,
+                            enabled = !uiState.cargando,
+                            modifier = Modifier.fillMaxWidth().height(50.dp)
                         ) {
-                            Text("ACTUALIZAR CONTRASEÑA")
+                            Text(if (uiState.cargando) "ACTUALIZANDO..." else "ACTUALIZAR CONTRASEÑA")
+                        }
+
+                        TextButton(
+                            onClick = viewModel::enviarCodigo,
+                            enabled = !uiState.cargando,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Reenviar código")
                         }
                     }
 

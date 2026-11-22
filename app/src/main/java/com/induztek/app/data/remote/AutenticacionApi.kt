@@ -34,8 +34,8 @@ interface AutenticacionApi {
         @Body datos: CambiarContrasenaRequest
     )
 
-    @GET("api/autenticacion/pregunta")
-    suspend fun obtenerPregunta(@Query("correo") correo: String): PreguntaSeguridadResponse
+    @POST("api/autenticacion/solicitar-codigo")
+    suspend fun solicitarCodigo(@Body datos: SolicitarCodigoRequest)
 
     @PUT("api/autenticacion/recuperar-contrasena")
     suspend fun recuperarContrasena(@Body datos: RecuperarContrasenaRequest)

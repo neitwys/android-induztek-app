@@ -34,7 +34,6 @@ import com.induztek.app.R
 import com.induztek.app.model.RegistroUsuarioEmpresaUiState
 import com.induztek.app.ui.components.CampoContrasena
 import com.induztek.app.ui.components.CampoTexto
-import com.induztek.app.ui.components.SeleccionPreguntaSeguridad
 import com.induztek.app.ui.components.TarjetaSeccion
 import com.induztek.app.ui.theme.Dimens
 import com.induztek.app.viewmodel.RegistroUsuarioEmpresaViewModel
@@ -63,8 +62,6 @@ fun RegistroUsuarioEmpresaScreen(
         onNombreCambia = viewModel::onNombreCambia,
         onCorreoCambia = viewModel::onCorreoCambia,
         onContrasenaCambia = viewModel::onContrasenaCambia,
-        onTipoPreguntaCambia = viewModel::onTipoPreguntaClaveCambia,
-        onRespuestaPreguntaCambia = viewModel::onRespuestaPreguntaClaveCambia,
         onAlternarVisible = viewModel::onAlternarVisibilidadContrasena,
         onRegistrar = viewModel::onRegistrar,
         onVolver = onVolver
@@ -79,8 +76,6 @@ fun RegistroUsuarioEmpresaContent(
     onNombreCambia: (String) -> Unit,
     onCorreoCambia: (String) -> Unit,
     onContrasenaCambia: (String) -> Unit,
-    onTipoPreguntaCambia: (Int) -> Unit,
-    onRespuestaPreguntaCambia: (String) -> Unit,
     onAlternarVisible: () -> Unit,
     onRegistrar: () -> Unit,
     onVolver: () -> Unit
@@ -174,35 +169,19 @@ fun RegistroUsuarioEmpresaContent(
                     error = uiState.errorContrasena
                 )
 
-                SeleccionPreguntaSeguridad(
-                    preguntaSeleccionadaId = uiState.tipoPreguntaClave,
-                    onPreguntaSeleccionada = { nuevoId ->
-                        onTipoPreguntaCambia(nuevoId)
-                    }
-                )
+                Spacer(Modifier.height(Dimens.espacioChico))
 
-                CampoTexto(
-                    valor = uiState.respuestaPreguntaClave,
-                    onValorCambia = onRespuestaPreguntaCambia,
-                    etiqueta = "Respuesta de Seguridad",
-                    error = uiState.errorRespuestaPregunta,
-                    tipoTeclado = KeyboardType.Text,
-                    icono = R.drawable.ic_contrasena
-                )
-            }
-
-            Spacer(Modifier.height(Dimens.espacioChico))
-
-            Button(
-                onClick = onRegistrar,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp)
-            ) {
-                Text(
-                    text = if (esRepresentante) "Registrar Representante" else "Registrar Usuario",
-                    style = MaterialTheme.typography.titleMedium
-                )
+                Button(
+                    onClick = onRegistrar,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp)
+                ) {
+                    Text(
+                        text = if (esRepresentante) "Registrar Representante" else "Registrar Usuario",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                }
             }
         }
     }

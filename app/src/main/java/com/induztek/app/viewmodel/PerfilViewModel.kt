@@ -8,40 +8,14 @@ import androidx.lifecycle.viewModelScope
 import com.induztek.app.data.repository.AvatarRepository
 import com.induztek.app.data.repository.RemoteUsuarioRepository
 import com.induztek.app.data.repository.UsuarioRepository
+import com.induztek.app.model.PerfilUiState
 import com.induztek.app.model.Usuario
 import com.induztek.app.utils.ConvertidorImagenUtils
-import com.induztek.app.utils.PreguntasSeguridadUtils
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-
-data class PerfilUiState(
-    val usuario: Usuario? = null,
-    val fotoUri: Uri? = null,
-    // Formulario Editar Perfil
-    val editandoPerfil: Boolean = false,
-    val nombreEditado: String = "",
-    val errorNombre: String? = null,
-    val correoEditado: String = "",
-    val errorCorreo: String? = null,
-    // Formulario Cambiar Contraseña (con doble verificación)
-    val cambiandoClave: Boolean = false,
-    val claveActual: String = "",
-    val errorClaveActual: String? = null,
-    val textoPreguntaSeguridad: String = "Pregunta de seguridad",
-    val respuestaSeguridad: String = "",
-    val errorRespuestaSeguridad: String? = null,
-    val claveNueva: String = "",
-    val errorClaveNueva: String? = null,
-    val confirmarClaveNueva: String = "",
-    val errorConfirmarClave: String? = null,
-    val clavesVisibles: Boolean = false,
-    // Mensajes
-    val mensajeExito: String? = null,
-    val mensajeError: String? = null
-)
 
 class PerfilViewModel(
     application: Application,
@@ -61,7 +35,6 @@ class PerfilViewModel(
     fun cargarDatosUsuario(usuario: Usuario?) {
         if (usuario == null) return
 
-        // Muestra de inmediato los datos en memoria mientras refresca desde el servidor
         aplicarUsuarioEnEstado(usuario)
 
         viewModelScope.launch {
@@ -69,7 +42,6 @@ class PerfilViewModel(
                 val usuarioServidor = usuarioRepository.buscarPorId(usuario.id)
                 aplicarUsuarioEnEstado(usuarioServidor)
             } catch (_: Exception) {
-                // Si falla la red, mantiene los datos ya cargados en memoria
             }
         }
     }
@@ -81,8 +53,7 @@ class PerfilViewModel(
                 usuario = usuario,
                 fotoUri = fotoUriCargada,
                 nombreEditado = usuario.nombre,
-                correoEditado = usuario.correo,
-                textoPreguntaSeguridad = PreguntasSeguridadUtils.obtenerTextoPorId(usuario.tipoPreguntaClave)
+                correoEditado = usuario.correo
             )
         }
     }
@@ -163,11 +134,9 @@ class PerfilViewModel(
                 cambiandoClave = !it.cambiandoClave,
                 editandoPerfil = false,
                 claveActual = "",
-                respuestaSeguridad = "",
                 claveNueva = "",
                 confirmarClaveNueva = "",
                 errorClaveActual = null,
-                errorRespuestaSeguridad = null,
                 errorClaveNueva = null,
                 errorConfirmarClave = null,
                 mensajeExito = null,
@@ -178,10 +147,6 @@ class PerfilViewModel(
 
     fun onClaveActualCambia(valor: String) {
         _uiState.update { it.copy(claveActual = valor, errorClaveActual = null) }
-    }
-
-    fun onRespuestaSeguridadCambia(valor: String) {
-        _uiState.update { it.copy(respuestaSeguridad = valor, errorRespuestaSeguridad = null) }
     }
 
     fun onClaveNuevaCambia(valor: String) {
@@ -201,7 +166,6 @@ class PerfilViewModel(
         val usuarioActual = estado.usuario ?: return
 
         val errorActual = if (estado.claveActual.isBlank()) "Ingrese su contraseña actual" else null
-        val errorRespuesta = if (estado.respuestaSeguridad.isBlank()) "Responda su pregunta de seguridad" else null
         val errorNueva = when {
             estado.claveNueva.isBlank() -> "Ingrese la nueva contraseña"
             estado.claveNueva.trim().length < 8 -> "Mínimo 8 caracteres"
@@ -214,11 +178,10 @@ class PerfilViewModel(
             else -> null
         }
 
-        if (errorActual != null || errorRespuesta != null || errorNueva != null || errorConfirmar != null) {
+        if (errorActual != null || errorNueva != null || errorConfirmar != null) {
             _uiState.update {
                 it.copy(
                     errorClaveActual = errorActual,
-                    errorRespuestaSeguridad = errorRespuesta,
                     errorClaveNueva = errorNueva,
                     errorConfirmarClave = errorConfirmar
                 )
@@ -231,14 +194,12 @@ class PerfilViewModel(
                 usuarioRepository.cambiarContrasena(
                     idUsuario = usuarioActual.id,
                     contrasenaActualPlana = estado.claveActual,
-                    respuestaSeguridad = estado.respuestaSeguridad,
                     nuevaContrasenaPlana = estado.claveNueva
                 )
                 _uiState.update {
                     it.copy(
                         cambiandoClave = false,
                         claveActual = "",
-                        respuestaSeguridad = "",
                         claveNueva = "",
                         confirmarClaveNueva = "",
                         mensajeExito = "Contraseña actualizada con éxito",
@@ -246,17 +207,14 @@ class PerfilViewModel(
                     )
                 }
             } catch (e: Exception) {
-                val mensaje = e.message ?: "Error al validar credenciales"
-                if (mensaje.contains("seguridad", ignoreCase = true) || mensaje.contains("respuesta", ignoreCase = true)) {
-                    _uiState.update { it.copy(errorRespuestaSeguridad = mensaje) }
-                } else {
-                    _uiState.update { it.copy(errorClaveActual = mensaje) }
+                _uiState.update {
+                    it.copy(errorClaveActual = e.message ?: "La contraseña actual es incorrecta")
                 }
             }
         }
     }
 
-    // --- FOTO PERFIL (formato MiRegistro: ConvertidorImagen -> AvatarRepository) ---
+    // --- FOTO PERFIL ---
     fun actualizarFotoPerfil(uriOrigen: Uri?) {
         if (uriOrigen == null) return
         val usuarioActual = _uiState.value.usuario ?: return

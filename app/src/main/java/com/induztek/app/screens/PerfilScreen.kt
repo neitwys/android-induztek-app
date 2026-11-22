@@ -332,22 +332,6 @@ fun PerfilScreen(
                             error = uiState.errorClaveActual
                         )
 
-                        Text(
-                            text = "Verificación de seguridad: ${uiState.textoPreguntaSeguridad}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.secondary,
-                            fontWeight = FontWeight.Medium
-                        )
-
-                        CampoTexto(
-                            valor = uiState.respuestaSeguridad,
-                            onValorCambia = viewModel::onRespuestaSeguridadCambia,
-                            etiqueta = "Respuesta de Seguridad",
-                            error = uiState.errorRespuestaSeguridad,
-                            tipoTeclado = KeyboardType.Text,
-                            icono = R.drawable.ic_contrasena
-                        )
-
                         CampoContrasena(
                             valor = uiState.claveNueva,
                             onValorCambia = viewModel::onClaveNuevaCambia,

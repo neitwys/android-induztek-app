@@ -6,6 +6,7 @@ import com.induztek.app.data.remote.CambiarContrasenaRequest
 import com.induztek.app.data.remote.RecuperarContrasenaRequest
 import com.induztek.app.data.remote.RegistroUsuarioRequest
 import com.induztek.app.data.remote.RetrofitClient
+import com.induztek.app.data.remote.SolicitarCodigoRequest
 import com.induztek.app.data.remote.aUsuario
 import com.induztek.app.model.Usuario
 import org.json.JSONObject
@@ -29,8 +30,6 @@ class RemoteUsuarioRepository(
         nombre: String,
         correo: String,
         contrasenaPlana: String,
-        tipoPregunta: Int,
-        respuestaPregunta: String,
         rolId: Long,
         empresaId: Long?
     ): Usuario {
@@ -39,53 +38,37 @@ class RemoteUsuarioRepository(
             correo = correo.trim(),
             contrasena = contrasenaPlana.trim(),
             rol = rolId,
-            tipoPreguntaClave = tipoPregunta,
-            respuestaPreguntaClave = respuestaPregunta.trim(),
             empresaId = empresaId
         )
         return llamar { api.crear(datos) }.aUsuario()
     }
 
-    override suspend fun actualizarDatosPerfil(
-        idUsuario: Long,
-        nombre: String,
-        correo: String
-    ): Usuario {
-        val datos = ActualizarPerfilRequest(
-            nombre = nombre.trim(),
-            correo = correo.trim()
-        )
-        return llamar { api.actualizarPerfil(idUsuario, datos) }.aUsuario()
-    }
+    override suspend fun actualizarDatosPerfil(idUsuario: Long, nombre: String, correo: String): Usuario =
+        llamar { api.actualizarPerfil(idUsuario, ActualizarPerfilRequest(nombre.trim(), correo.trim())) }.aUsuario()
 
     override suspend fun cambiarContrasena(
         idUsuario: Long,
         contrasenaActualPlana: String,
-        respuestaSeguridad: String,
         nuevaContrasenaPlana: String
     ) {
-        val datos = CambiarContrasenaRequest(
-            contrasenaActual = contrasenaActualPlana.trim(),
-            respuestaSeguridad = respuestaSeguridad.trim(),
-            nuevaContrasena = nuevaContrasenaPlana.trim()
-        )
-        llamar { api.cambiarContrasena(idUsuario, datos) }
+        llamar {
+            api.cambiarContrasena(
+                idUsuario,
+                CambiarContrasenaRequest(contrasenaActualPlana.trim(), nuevaContrasenaPlana.trim())
+            )
+        }
     }
 
-    override suspend fun obtenerPreguntaSeguridad(correo: String): Int =
-        llamar { api.obtenerPregunta(correo.trim()) }.tipoPreguntaClave
+    override suspend fun solicitarCodigoRecuperacion(correo: String) {
+        llamar { api.solicitarCodigo(SolicitarCodigoRequest(correo.trim())) }
+    }
 
-    override suspend fun recuperarContrasena(
-        correo: String,
-        respuestaSeguridad: String,
-        nuevaContrasenaPlana: String
-    ) {
-        val datos = RecuperarContrasenaRequest(
-            correo = correo.trim(),
-            respuestaSeguridad = respuestaSeguridad.trim(),
-            nuevaContrasena = nuevaContrasenaPlana.trim()
-        )
-        llamar { api.recuperarContrasena(datos) }
+    override suspend fun recuperarContrasena(correo: String, codigo: String, nuevaContrasenaPlana: String) {
+        llamar {
+            api.recuperarContrasena(
+                RecuperarContrasenaRequest(correo.trim(), codigo.trim(), nuevaContrasenaPlana.trim())
+            )
+        }
     }
 
     private suspend fun <T> llamar(peticion: suspend () -> T): T = try {
@@ -104,9 +87,6 @@ class RemoteUsuarioRepository(
         } catch (ex: Exception) {
             ""
         }
-        return mensaje.ifBlank {
-            if (e.code() == 401) "Correo o contraseña incorrectos"
-            else "Error del servidor (${e.code()})"
-        }
+        return mensaje.ifBlank { "Error del servidor (${e.code()})" }
     }
 }
