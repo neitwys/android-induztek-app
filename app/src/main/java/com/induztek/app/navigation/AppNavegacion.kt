@@ -21,6 +21,7 @@ import androidx.navigation.navArgument
 import com.induztek.app.data.SesionPreferencias
 import com.induztek.app.data.repository.RemoteUsuarioRepository
 import com.induztek.app.model.Usuario
+import com.induztek.app.screens.CrearContrasenaScreen
 import com.induztek.app.screens.HistorialEquiposScreen
 import com.induztek.app.screens.ListaYEliminarEmpresasScreen
 import com.induztek.app.screens.ListaYEliminarUsuariosScreen
@@ -51,8 +52,14 @@ fun AppNavegacion(
     LaunchedEffect(idUsuarioGuardado) {
         if (idUsuarioGuardado != -1L && usuarioActual == null) {
             try {
-                usuarioActual = usuarioRepo.buscarPorId(idUsuarioGuardado)
-                navController.navigate(Ruta.MenuPrincipal.ruta) {
+                val usuario = usuarioRepo.buscarPorId(idUsuarioGuardado)
+                usuarioActual = usuario
+                val destino = if (usuario.requiereCambioClave) {
+                    Ruta.CrearContrasena.crearRuta(usuario.id)
+                } else {
+                    Ruta.MenuPrincipal.ruta
+                }
+                navController.navigate(destino) {
                     popUpTo(Ruta.Login.ruta) { inclusive = true }
                 }
             } catch (_: Exception) {
@@ -83,8 +90,15 @@ fun AppNavegacion(
                 onLoginExitoso = { usuario ->
                     usuarioActual = usuario
                     sesionPrefs.guardar(usuario.id)
-                    navController.navigate(Ruta.MenuPrincipal.ruta) {
-                        popUpTo(Ruta.Login.ruta) { inclusive = true }
+
+                    if (usuario.requiereCambioClave) {
+                        navController.navigate(Ruta.CrearContrasena.crearRuta(usuario.id)) {
+                            popUpTo(Ruta.Login.ruta) { inclusive = true }
+                        }
+                    } else {
+                        navController.navigate(Ruta.MenuPrincipal.ruta) {
+                            popUpTo(Ruta.Login.ruta) { inclusive = true }
+                        }
                     }
                 },
                 onNavegarRecuperarContrasena = {
@@ -99,6 +113,26 @@ fun AppNavegacion(
                 onVolver = { navController.popBackStack() }
             )
         }
+
+        // 2.5 Crear PRIMERA Contraseña
+        composable(
+            route = Ruta.CrearContrasena.ruta,
+            arguments = listOf(navArgument("idUsuario") { type = NavType.LongType })
+        ) { backStackEntry ->
+            val idUsuario = backStackEntry.arguments?.getLong("idUsuario") ?: 0L
+
+            CrearContrasenaScreen(
+                idUsuario = idUsuario,
+                alNavegarAlInicio = {
+                    sesionPrefs.borrar()
+                    usuarioActual = null
+                    navController.navigate(Ruta.Login.ruta) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                }
+            )
+        }
+
 
         // 3. Menú Principal
         composable(Ruta.MenuPrincipal.ruta) {
@@ -210,15 +244,8 @@ fun AppNavegacion(
             )
         }
 
-        // 10. Registro de Usuario Interno (Técnico, Ingeniero, Jefe)
-        composable("registro_usuario_empresa") {
-            RegistroUsuarioEmpresaScreen(
-                empresaId = 0L,
-                onVolver = { navController.popBackStack() }
-            )
-        }
 
-        // 11. Ver su propia empresa.
+        // 10. Ver su propia empresa.
         composable(Ruta.MiEmpresa.ruta) {
             val idEmpresaDelUsuario = usuarioActual?.empresaId ?: 0L
 

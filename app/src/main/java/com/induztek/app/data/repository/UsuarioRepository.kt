@@ -27,4 +27,5 @@ interface UsuarioRepository {
         codigo: String,
         nuevaContrasenaPlana: String
     )
+    suspend fun crearPrimeraContrasena(idUsuario: Long, nuevaContrasenaPlana: String)
 }

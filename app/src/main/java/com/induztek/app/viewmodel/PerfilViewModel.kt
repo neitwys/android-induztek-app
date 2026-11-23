@@ -43,7 +43,7 @@ class PerfilViewModel(
 
         val idDeLaEmpresa = usuario.empresaId
 
-        if (idDeLaEmpresa != null) {
+        if (idDeLaEmpresa != null && idDeLaEmpresa > 0L) {
             viewModelScope.launch {
                 val resultado = empresaRepository.obtenerEmpresaPorId(idDeLaEmpresa)
                 resultado.onSuccess { empresa ->
@@ -52,7 +52,10 @@ class PerfilViewModel(
                     _uiState.update { it.copy(nombreEmpresa = "Empresa no encontrada") }
                 }
             }
+        } else {
+            _uiState.update { it.copy(nombreEmpresa = "Induztek") }
         }
+
         viewModelScope.launch {
             try {
                 val usuarioServidor = usuarioRepository.buscarPorId(usuario.id)

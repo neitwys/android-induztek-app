@@ -3,6 +3,7 @@ package com.induztek.app.data.repository
 import com.induztek.app.data.remote.ActualizarPerfilRequest
 import com.induztek.app.data.remote.AutenticacionApi
 import com.induztek.app.data.remote.CambiarContrasenaRequest
+import com.induztek.app.data.remote.CrearPrimeraContrasenaRequest
 import com.induztek.app.data.remote.RecuperarContrasenaRequest
 import com.induztek.app.data.remote.RegistroUsuarioRequest
 import com.induztek.app.data.remote.RetrofitClient
@@ -93,5 +94,14 @@ class RemoteUsuarioRepository(
             ""
         }
         return mensaje.ifBlank { "Error del servidor (${e.code()})" }
+    }
+
+    override suspend fun crearPrimeraContrasena(idUsuario: Long, nuevaContrasenaPlana: String) {
+        llamar {
+            api.crearPrimeraContrasena(
+                idUsuario,
+                CrearPrimeraContrasenaRequest(nuevaContrasenaPlana.trim())
+            )
+        }
     }
 }

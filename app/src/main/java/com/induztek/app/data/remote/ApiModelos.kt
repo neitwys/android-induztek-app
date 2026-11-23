@@ -44,7 +44,8 @@ data class UsuarioResponse(
     val rol: Long,
     val fotoPerfil: String?,
     val empresaId: Long?,
-    val activo: Boolean? = true
+    val activo: Boolean? = true,
+    val requiereCambioClave: Boolean? = false
 )
 
 fun UsuarioResponse.aUsuario(): Usuario {
@@ -72,6 +73,11 @@ fun UsuarioResponse.aUsuario(): Usuario {
         respuestaPreguntaClave = "",
         empresaId = empresaId,
         fotoPerfilPath = urlCompletaFoto,
-        activo = activo ?: true
+        activo = activo ?: true,
+        requiereCambioClave = requiereCambioClave ?: false
     )
 }
+
+data class CrearPrimeraContrasenaRequest(
+    val nuevaContrasena: String
+)

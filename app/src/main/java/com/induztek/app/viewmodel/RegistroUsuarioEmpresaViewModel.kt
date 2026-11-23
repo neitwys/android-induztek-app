@@ -66,7 +66,6 @@ class RegistroUsuarioEmpresaViewModel(
                 it.copy(
                     errorNombre = errorNombre,
                     errorCorreo = errorCorreo,
-                    errorContrasena = null,
                     registroExitoso = false
                 )
             }

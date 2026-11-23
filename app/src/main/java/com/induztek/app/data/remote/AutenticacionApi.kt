@@ -46,4 +46,10 @@ interface AutenticacionApi {
 
     @PATCH("api/autenticacion/usuarios/{id}/deshabilitar")
     suspend fun deshabilitar(@Path(value = "id") id: Long)
+
+    @PUT("api/autenticacion/{id}/primera-contrasena")
+    suspend fun crearPrimeraContrasena(
+        @Path("id") idUsuario: Long,
+        @Body request: CrearPrimeraContrasenaRequest
+    )
 }

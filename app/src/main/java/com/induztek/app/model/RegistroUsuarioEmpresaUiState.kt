@@ -11,7 +11,6 @@ data class RegistroUsuarioEmpresaUiState(
     // Validaciones
     val errorNombre: String? = null,
     val errorCorreo: String? = null,
-    val errorContrasena: String? = null,
 
     val registroExitoso: Boolean = false,
     val contrasenaVisible: Boolean = false

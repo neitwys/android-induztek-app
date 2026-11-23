@@ -12,5 +12,6 @@ data class Usuario(
     val empresaId: Long? = null,
     val empresaNombre: String? = null,
     val fotoPerfilPath: String? = null,
-    val activo: Boolean = true
+    val activo: Boolean = true,
+    val requiereCambioClave: Boolean = false
 )

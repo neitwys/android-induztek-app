@@ -15,4 +15,7 @@ sealed class Ruta(val ruta: String) {
     object RegistroPrueba : Ruta("registro_prueba")
     object HistorialEquipos : Ruta("historial_equipos")
     data object MiEmpresa : Ruta("mi_empresa")
+    data object CrearContrasena : Ruta("crear_contrasena/{idUsuario}") {
+        fun crearRuta(idUsuario: Long): String = "crear_contrasena/$idUsuario"
+    }
 }
