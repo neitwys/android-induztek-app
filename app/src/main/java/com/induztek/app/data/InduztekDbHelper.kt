@@ -15,7 +15,7 @@ class InduztekDbHelper(context: Context) :
 
     companion object {
         private const val NOMBRE_DB = "induztek.db"
-        private const val VERSION_DB = 10
+        private const val VERSION_DB = 11
 
         //----------------- TABLA ROLES -----------------//
         private const val TABLA_ROLES = "roles"
@@ -76,6 +76,8 @@ class InduztekDbHelper(context: Context) :
         private const val PROT_LATITUD = "latitud"
         private const val PROT_LONGITUD = "longitud"
 
+        private const val USU_ACTIVO = "activo"
+
         //----------------- CREACION TABLAS -----------------//
         private const val SQL_CREAR_ROLES =
             "CREATE TABLE $TABLA_ROLES (" +
@@ -101,6 +103,7 @@ class InduztekDbHelper(context: Context) :
                     "$USU_TIPO_PREGUNTA INTEGER, " +
                     "$USU_RESPUESTA_PREGUNTA TEXT, " +
                     "$USU_FOTO_PERFIL TEXT, " +
+                    "$USU_ACTIVO INTEGER NOT NULL DEFAULT 1, " +
                     "$USU_EMPRESA_ID_FK INTEGER, " +
                     "$USU_ROL INTEGER NOT NULL REFERENCES $TABLA_ROLES($ROL_ID), " +
                     "FOREIGN KEY ($USU_EMPRESA_ID_FK) REFERENCES $TABLA_EMPRESAS_CLIENTES($EMP_ID) ON DELETE SET NULL)"

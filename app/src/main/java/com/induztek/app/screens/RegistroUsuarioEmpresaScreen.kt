@@ -32,7 +32,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.induztek.app.R
 import com.induztek.app.model.RegistroUsuarioEmpresaUiState
-import com.induztek.app.ui.components.CampoContrasena
 import com.induztek.app.ui.components.CampoTexto
 import com.induztek.app.ui.components.TarjetaSeccion
 import com.induztek.app.ui.theme.Dimens
@@ -61,8 +60,6 @@ fun RegistroUsuarioEmpresaScreen(
         onRolCambia = viewModel::onRolCambia,
         onNombreCambia = viewModel::onNombreCambia,
         onCorreoCambia = viewModel::onCorreoCambia,
-        onContrasenaCambia = viewModel::onContrasenaCambia,
-        onAlternarVisible = viewModel::onAlternarVisibilidadContrasena,
         onRegistrar = viewModel::onRegistrar,
         onVolver = onVolver
     )
@@ -75,8 +72,6 @@ fun RegistroUsuarioEmpresaContent(
     onRolCambia: (Int) -> Unit,
     onNombreCambia: (String) -> Unit,
     onCorreoCambia: (String) -> Unit,
-    onContrasenaCambia: (String) -> Unit,
-    onAlternarVisible: () -> Unit,
     onRegistrar: () -> Unit,
     onVolver: () -> Unit
 ) {
@@ -158,15 +153,6 @@ fun RegistroUsuarioEmpresaContent(
                     error = uiState.errorCorreo,
                     tipoTeclado = KeyboardType.Email,
                     icono = R.drawable.ic_correo
-                )
-
-                CampoContrasena(
-                    valor = uiState.contrasena,
-                    onValorCambia = onContrasenaCambia,
-                    etiqueta = "Contraseña (mínimo 8 caracteres)",
-                    visible = uiState.contrasenaVisible,
-                    onAlternarVisible = onAlternarVisible,
-                    error = uiState.errorContrasena
                 )
 
                 Spacer(Modifier.height(Dimens.espacioChico))

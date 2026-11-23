@@ -43,14 +43,6 @@ class RegistroUsuarioEmpresaViewModel(
         _uiState.update { it.copy(correo = valor, errorCorreo = null, registroExitoso = false) }
     }
 
-    fun onContrasenaCambia(valor: String) {
-        _uiState.update { it.copy(contrasena = valor, errorContrasena = null, registroExitoso = false) }
-    }
-
-    fun onAlternarVisibilidadContrasena() {
-        _uiState.update { it.copy(contrasenaVisible = !it.contrasenaVisible) }
-    }
-
     private fun validarNombre(nombre: String): String? = when {
         nombre.isBlank() -> "El nombre completo es obligatorio"
         nombre.trim().length < 3 -> "Ingrese nombre y apellido (mínimo 3 caracteres)"
@@ -63,25 +55,18 @@ class RegistroUsuarioEmpresaViewModel(
         else -> null
     }
 
-    private fun validarContrasena(contrasena: String): String? = when {
-        contrasena.isBlank() -> "La contraseña es obligatoria"
-        contrasena.trim().length < 8 -> "La contraseña debe tener al menos 8 caracteres"
-        else -> null
-    }
-
     fun onRegistrar() {
         val estado = _uiState.value
 
         val errorNombre = validarNombre(estado.nombre)
         val errorCorreo = validarCorreo(estado.correo)
-        val errorContrasena = validarContrasena(estado.contrasena)
 
-        if (errorNombre != null || errorCorreo != null || errorContrasena != null) {
+        if (errorNombre != null || errorCorreo != null) {
             _uiState.update {
                 it.copy(
                     errorNombre = errorNombre,
                     errorCorreo = errorCorreo,
-                    errorContrasena = errorContrasena,
+                    errorContrasena = null,
                     registroExitoso = false
                 )
             }
@@ -90,13 +75,14 @@ class RegistroUsuarioEmpresaViewModel(
 
         val empresaFk = if (estado.empresaId > 0L) estado.empresaId else null
         val rolFinal = if (estado.empresaId > 0L) 4L else estado.rolIdSeleccionado.toLong()
+        val claveInicialActivacion = ""
 
         viewModelScope.launch {
             try {
                 usuarioRepository.registrarUsuario(
-                    nombre = estado.nombre,
-                    correo = estado.correo,
-                    contrasenaPlana = estado.contrasena,
+                    nombre = estado.nombre.trim(),
+                    correo = estado.correo.trim().lowercase(),
+                    contrasenaPlana = claveInicialActivacion,
                     rolId = rolFinal,
                     empresaId = empresaFk
                 )

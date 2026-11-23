@@ -11,5 +11,6 @@ data class Usuario(
     val respuestaPreguntaClave: String,
     val empresaId: Long? = null,
     val empresaNombre: String? = null,
-    val fotoPerfilPath: String? = null
+    val fotoPerfilPath: String? = null,
+    val activo: Boolean = true
 )

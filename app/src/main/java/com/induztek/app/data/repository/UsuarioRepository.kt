@@ -6,6 +6,8 @@ interface UsuarioRepository {
     suspend fun buscarPorId(id: Long): Usuario
     suspend fun listarUsuarios(): List<Usuario>
     suspend fun eliminarUsuario(idUsuario: Long)
+
+    suspend fun deshabilitarUsuario(usuarioId: Long)
     suspend fun registrarUsuario(
         nombre: String,
         correo: String,

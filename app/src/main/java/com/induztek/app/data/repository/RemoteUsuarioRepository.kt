@@ -24,7 +24,12 @@ class RemoteUsuarioRepository(
         llamar { api.listar() }.map { it.aUsuario() }
 
     override suspend fun eliminarUsuario(idUsuario: Long) =
+
         llamar { api.eliminar(idUsuario) }
+    override suspend fun deshabilitarUsuario(usuarioId: Long) {
+
+        llamar { api.deshabilitar(usuarioId) }
+    }
 
     override suspend fun registrarUsuario(
         nombre: String,

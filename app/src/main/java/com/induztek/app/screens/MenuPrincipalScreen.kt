@@ -105,6 +105,7 @@ fun MenuPrincipalContent(
     val esClienteExterno = rolId == 4L
     val puedeGestionarEmpresas = rolId == 2L || rolId == 3L
     val esJefeTecnico = rolId == 3L
+    val puedeRegistrarPruebas = rolId == 1L || rolId == 2L
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -181,10 +182,15 @@ fun MenuPrincipalContent(
                     }
 
 
-                    if (!esClienteExterno) {
+                    if (puedeRegistrarPruebas) {
                         ListItem(
                             headlineContent = { Text("Registrar Prueba en Terreno") },
-                            leadingContent = { Icon(painter = painterResource(R.drawable.ic_giro), contentDescription = null) },
+                            leadingContent = {
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_giro),
+                                    contentDescription = null
+                                )
+                            },
                             modifier = Modifier.clickable {
                                 scope.launch { drawerState.close() }
                                 onNavegarRegistroPrueba()

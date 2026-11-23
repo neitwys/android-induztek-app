@@ -43,7 +43,8 @@ data class UsuarioResponse(
     val correo: String,
     val rol: Long,
     val fotoPerfil: String?,
-    val empresaId: Long?
+    val empresaId: Long?,
+    val activo: Boolean? = true
 )
 
 fun UsuarioResponse.aUsuario(): Usuario {
@@ -70,6 +71,7 @@ fun UsuarioResponse.aUsuario(): Usuario {
         tipoPreguntaClave = 0,
         respuestaPreguntaClave = "",
         empresaId = empresaId,
-        fotoPerfilPath = urlCompletaFoto
+        fotoPerfilPath = urlCompletaFoto,
+        activo = activo ?: true
     )
 }
