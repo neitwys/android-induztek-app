@@ -2,15 +2,26 @@ package com.induztek.app.viewmodel
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
 import com.induztek.app.data.EmpresaConInstalacion
-import com.induztek.app.data.InduztekDbHelper
+import com.induztek.app.data.repository.EmpresaRepository
+import com.induztek.app.data.repository.RemoteEmpresaRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
-class ListaYEliminarEmpresasViewModel(application: Application) : AndroidViewModel(application) {
+class ListaYEliminarEmpresasViewModel(
+    application: Application,
+    private val empresaRepository: EmpresaRepository
+) : AndroidViewModel(application) {
 
-    private val db = InduztekDbHelper(application)
+    constructor(application: Application) : this(
+        application = application,
+        empresaRepository = RemoteEmpresaRepository()
+    )
+
+    private var todasLasEmpresas: List<EmpresaConInstalacion> = emptyList()
 
     private val _filtro = MutableStateFlow("")
     val filtro: StateFlow<String> = _filtro.asStateFlow()
@@ -18,18 +29,32 @@ class ListaYEliminarEmpresasViewModel(application: Application) : AndroidViewMod
     private val _empresas = MutableStateFlow<List<EmpresaConInstalacion>>(emptyList())
     val empresas: StateFlow<List<EmpresaConInstalacion>> = _empresas.asStateFlow()
 
+    private val _cargando = MutableStateFlow(false)
+    val cargando: StateFlow<Boolean> = _cargando.asStateFlow()
+
+    private val _error = MutableStateFlow<String?>(null)
+    val error: StateFlow<String?> = _error.asStateFlow()
+
     init {
         recargar()
     }
 
-    private fun recargar() {
-        val todas = db.listarEmpresas()
-        val busqueda = _filtro.value.trim().lowercase()
+    fun recargar() {
+        viewModelScope.launch {
+            _cargando.value = true
+            _error.value = null
+            todasLasEmpresas = empresaRepository.listarEmpresas()
+            aplicarFiltro()
+            _cargando.value = false
+        }
+    }
 
+    private fun aplicarFiltro() {
+        val busqueda = _filtro.value.trim().lowercase()
         _empresas.value = if (busqueda.isEmpty()) {
-            todas
+            todasLasEmpresas
         } else {
-            todas.filter {
+            todasLasEmpresas.filter {
                 it.razonSocial.lowercase().contains(busqueda) ||
                         it.rut.lowercase().contains(busqueda) ||
                         it.nombreInstalacion.lowercase().contains(busqueda) ||
@@ -40,16 +65,23 @@ class ListaYEliminarEmpresasViewModel(application: Application) : AndroidViewMod
 
     fun buscar(texto: String) {
         _filtro.value = texto
-        recargar()
+        aplicarFiltro()
     }
 
     fun eliminar(empresa: EmpresaConInstalacion) {
-        db.eliminarEmpresa(empresa.id)
-        recargar()
-    }
+        viewModelScope.launch {
+            _cargando.value = true
+            _error.value = null
 
-    override fun onCleared() {
-        db.close()
-        super.onCleared()
+            val eliminado = empresaRepository.eliminarEmpresa(empresa.id)
+            if (eliminado) {
+                todasLasEmpresas = todasLasEmpresas.filterNot { it.id == empresa.id }
+                aplicarFiltro()
+            } else {
+                _error.value = "No se pudo eliminar la empresa"
+            }
+
+            _cargando.value = false
+        }
     }
 }
