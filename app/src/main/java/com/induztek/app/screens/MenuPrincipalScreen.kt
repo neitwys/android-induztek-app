@@ -54,6 +54,7 @@ fun MenuPrincipalScreen(
     onNavegarRegistroUsuarioInterno: () -> Unit = {},
     onNavegarListaYEliminarEmpresas: () -> Unit,
     onNavegarRegistroPrueba: () -> Unit = {},
+    onNavegarRevisionPruebas: () -> Unit = {},
     onNavegarHistorialEquipos: () -> Unit = {},
     onCerrarSesion: () -> Unit = {},
     onNavegarMiEmpresa: () -> Unit = {},
@@ -74,11 +75,11 @@ fun MenuPrincipalScreen(
         onNavegarRegistroUsuarioInterno = onNavegarRegistroUsuarioInterno,
         onNavegarListaYEliminarEmpresas = onNavegarListaYEliminarEmpresas,
         onNavegarRegistroPrueba = onNavegarRegistroPrueba,
+        onNavegarRevisionPruebas = onNavegarRevisionPruebas,
         onNavegarHistorialEquipos = onNavegarHistorialEquipos,
         onCerrarSesion = onCerrarSesion,
         onNavegarMiEmpresa = onNavegarMiEmpresa,
         onNavegarListaUsuarios = onNavegarListaUsuarios
-
     )
 }
 
@@ -94,6 +95,7 @@ fun MenuPrincipalContent(
     onNavegarRegistroUsuarioInterno: () -> Unit = {},
     onNavegarListaYEliminarEmpresas: () -> Unit,
     onNavegarRegistroPrueba: () -> Unit = {},
+    onNavegarRevisionPruebas: () -> Unit = {},
     onNavegarHistorialEquipos: () -> Unit = {},
     onCerrarSesion: () -> Unit = {},
     onNavegarMiEmpresa: () -> Unit = {},
@@ -106,6 +108,7 @@ fun MenuPrincipalContent(
     val puedeGestionarEmpresas = rolId == 2L || rolId == 3L
     val esJefeTecnico = rolId == 3L
     val puedeRegistrarPruebas = rolId == 1L || rolId == 2L
+    val puedeRevisarPruebas = rolId == 2L || rolId == 3L
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -134,7 +137,7 @@ fun MenuPrincipalContent(
 
                     ListItem(
                         headlineContent = { Text("Mi Empresa") },
-                        leadingContent = { Icon(painter = painterResource(R.drawable.ic_instalacion), contentDescription = null) }, // Puedes cambiar el ícono
+                        leadingContent = { Icon(painter = painterResource(R.drawable.ic_instalacion), contentDescription = null) },
                         modifier = Modifier.clickable {
                             scope.launch { drawerState.close() }
                             onNavegarMiEmpresa()
@@ -162,8 +165,8 @@ fun MenuPrincipalContent(
                                 )
                             },
                             modifier = Modifier.clickable {
-                                onNavegarListaUsuarios() // <-- 1. Navega primero instantáneamente
-                                scope.launch { drawerState.close() } // <-- 2. Cierra el menú en segundo plano
+                                onNavegarListaUsuarios()
+                                scope.launch { drawerState.close() }
                             }
                         )
                         ListItem(
@@ -181,7 +184,6 @@ fun MenuPrincipalContent(
                         )
                     }
 
-
                     if (puedeRegistrarPruebas) {
                         ListItem(
                             headlineContent = { Text("Registrar Prueba en Terreno") },
@@ -194,6 +196,22 @@ fun MenuPrincipalContent(
                             modifier = Modifier.clickable {
                                 scope.launch { drawerState.close() }
                                 onNavegarRegistroPrueba()
+                            }
+                        )
+                    }
+
+                    if (puedeRevisarPruebas) {
+                        ListItem(
+                            headlineContent = { Text("Revisión de Pruebas") },
+                            leadingContent = {
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_giro),
+                                    contentDescription = null
+                                )
+                            },
+                            modifier = Modifier.clickable {
+                                onNavegarRevisionPruebas()
+                                scope.launch { drawerState.close() }
                             }
                         )
                     }

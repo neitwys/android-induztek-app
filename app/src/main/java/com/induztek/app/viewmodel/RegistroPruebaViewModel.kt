@@ -1,18 +1,26 @@
 package com.induztek.app.viewmodel
 
+import android.annotation.SuppressLint
 import android.app.Application
+import android.content.Context
+import android.location.Geocoder
+import android.location.LocationManager
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
-import com.induztek.app.data.repository.LocalPruebaRepository
+import androidx.lifecycle.viewModelScope
 import com.induztek.app.data.repository.PruebaRepository
+import com.induztek.app.data.repository.RemotePruebaRepository
 import com.induztek.app.model.ProtocoloPrueba
 import com.induztek.app.model.RegistroPruebaUiState
 import com.induztek.app.utils.ImagenUtils
 import com.induztek.app.utils.ValidacionUtils
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -24,7 +32,7 @@ class RegistroPruebaViewModel(
 
     constructor(application: Application) : this(
         application = application,
-        pruebaRepository = LocalPruebaRepository(application)
+        pruebaRepository = RemotePruebaRepository(application)
     )
 
     private val _uiState = MutableStateFlow(RegistroPruebaUiState())
@@ -60,10 +68,6 @@ class RegistroPruebaViewModel(
         _uiState.update { it.copy(valorMedicion = valor, errorValorMedicion = null) }
     }
 
-    fun onResultadoCambia(resultado: String) {
-        _uiState.update { it.copy(resultado = resultado) }
-    }
-
     fun onObservacionesCambia(obs: String) {
         _uiState.update { it.copy(observaciones = obs) }
     }
@@ -83,10 +87,35 @@ class RegistroPruebaViewModel(
         }
     }
 
+    @SuppressLint("MissingPermission")
     fun obtenerUbicacionGps() {
-        val latSimulada = -33.4489
-        val lonSimulada = -70.6693
-        _uiState.update { it.copy(latitud = latSimulada, longitud = lonSimulada) }
+        val context = getApplication<Application>().applicationContext
+        val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+
+        val ubicacion = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
+            ?: locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
+
+        val lat = ubicacion?.latitude ?: -33.4489
+        val lon = ubicacion?.longitude ?: -70.6693
+
+        _uiState.update { it.copy(latitud = lat, longitud = lon, direccionGps = null) }
+
+        viewModelScope.launch {
+            val direccion = withContext(Dispatchers.IO) {
+                try {
+                    @Suppress("DEPRECATION")
+                    val geocoder = Geocoder(context, Locale.getDefault())
+                    @Suppress("DEPRECATION")
+                    val lista = geocoder.getFromLocation(lat, lon, 1)
+                    lista?.firstOrNull()?.getAddressLine(0)
+                } catch (_: Exception) {
+                    null
+                }
+            }
+            if (!direccion.isNullOrBlank()) {
+                _uiState.update { it.copy(direccionGps = direccion) }
+            }
+        }
     }
 
     fun onGuardarProtocolo(idUsuarioTecnico: Long) {
@@ -116,6 +145,7 @@ class RegistroPruebaViewModel(
             return
         }
 
+        val equipoSeleccionado = estado.listaEquipos.find { it.idEquipo == estado.idEquipoSeleccionado }
         val valorNormalizado = estado.valorMedicion.trim().replace(",", ".").toDouble()
         val medicionFormateada = "$valorNormalizado $unidad"
 
@@ -124,22 +154,27 @@ class RegistroPruebaViewModel(
 
         val nuevoProtocolo = ProtocoloPrueba(
             idEquipo = estado.idEquipoSeleccionado,
+            codigoEquipo = equipoSeleccionado?.codigoEquipo.orEmpty(),
+            tipoEquipo = equipoSeleccionado?.tipoEquipo.orEmpty(),
             idUsuarioTecnico = idUsuarioTecnico,
             fechaHora = fechaActual,
             tipoPrueba = estado.tipoPrueba.trim(),
             valorMedicion = medicionFormateada,
-            resultado = estado.resultado,
-            estadoProtocolo = "REGISTRADO_TERRENO",
+            resultado = "PENDIENTE",
+            estadoProtocolo = "PENDIENTE_APROBACION",
             observaciones = estado.observaciones.trim(),
             fotoUri = estado.fotoUri,
             latitud = estado.latitud,
             longitud = estado.longitud
         )
 
-        val exito = pruebaRepository.registrarProtocolo(nuevoProtocolo)
-
-        if (exito) {
-            _uiState.update { it.copy(registroExitoso = true) }
+        viewModelScope.launch {
+            val exito = withContext(Dispatchers.IO) {
+                pruebaRepository.registrarProtocolo(nuevoProtocolo)
+            }
+            if (exito) {
+                _uiState.update { it.copy(registroExitoso = true) }
+            }
         }
     }
 
@@ -151,6 +186,7 @@ class RegistroPruebaViewModel(
                 fotoUri = null,
                 latitud = null,
                 longitud = null,
+                direccionGps = null,
                 errorTipoPrueba = null,
                 errorValorMedicion = null,
                 registroExitoso = false

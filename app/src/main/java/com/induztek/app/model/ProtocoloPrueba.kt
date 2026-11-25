@@ -10,10 +10,12 @@ data class ProtocoloPrueba(
     val fechaHora: String,
     val tipoPrueba: String,
     val valorMedicion: String,
-    val resultado: String, // "APROBADO" o "RECHAZADO"
-    val estadoProtocolo: String = "REGISTRADO_TERRENO", // "REGISTRADO_TERRENO" o "FORMALIZADO"
+    val resultado: String = "PENDIENTE",
+    val estadoProtocolo: String = "PENDIENTE_APROBACION",
     val observaciones: String = "",
     val fotoUri: String? = null,
     val latitud: Double? = null,
-    val longitud: Double? = null
+    val longitud: Double? = null,
+    val idUsuarioIngeniero: Long? = null,
+    val motivoRechazo: String? = null
 )

@@ -13,6 +13,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -27,11 +28,13 @@ import com.induztek.app.screens.ListaYEliminarEmpresasScreen
 import com.induztek.app.screens.ListaYEliminarUsuariosScreen
 import com.induztek.app.screens.LoginScreen
 import com.induztek.app.screens.MenuPrincipalScreen
+import com.induztek.app.screens.MiEmpresaScreen
 import com.induztek.app.screens.PerfilScreen
 import com.induztek.app.screens.RecuperarContrasenaScreen
 import com.induztek.app.screens.RegistroEmpresaScreen
 import com.induztek.app.screens.RegistroPruebaScreen
 import com.induztek.app.screens.RegistroUsuarioEmpresaScreen
+import com.induztek.app.screens.RevisionPruebasScreen
 import com.induztek.app.ui.theme.ModoTema
 import kotlinx.coroutines.launch
 
@@ -133,7 +136,6 @@ fun AppNavegacion(
             )
         }
 
-
         // 3. Menú Principal
         composable(Ruta.MenuPrincipal.ruta) {
             MenuPrincipalScreen(
@@ -147,6 +149,7 @@ fun AppNavegacion(
                 },
                 onNavegarListaYEliminarEmpresas = { navController.navigate(Ruta.ListaYEliminarEmpresas.ruta) },
                 onNavegarRegistroPrueba = { navController.navigate(Ruta.RegistroPrueba.ruta) },
+                onNavegarRevisionPruebas = { navController.navigate("revision_pruebas") },
                 onNavegarHistorialEquipos = { navController.navigate(Ruta.HistorialEquipos.ruta) },
                 onNavegarMiEmpresa = { navController.navigate(Ruta.MiEmpresa.ruta) },
                 onNavegarListaUsuarios = {
@@ -202,6 +205,16 @@ fun AppNavegacion(
             )
         }
 
+        // 6.1 Revisión y Aprobación/Rechazo de Pruebas (Ingeniero y Jefe Técnico)
+        composable("revision_pruebas") {
+            val puedeRevisar = usuarioActual?.rolId == 2L || usuarioActual?.rolId == 3L
+            RevisionPruebasScreen(
+                idUsuarioIngeniero = usuarioActual?.id ?: 1L,
+                esIngeniero = puedeRevisar,
+                onVolver = { navController.popBackStack() }
+            )
+        }
+
         // 7. Historial y Consulta de Equipos (filtrado por empresa si rolId == 4)
         composable(Ruta.HistorialEquipos.ruta) {
             val filtroEmpresa = if (usuarioActual?.rolId == 4L) usuarioActual?.empresaId else null
@@ -244,14 +257,13 @@ fun AppNavegacion(
             )
         }
 
-
         // 10. Ver su propia empresa.
         composable(Ruta.MiEmpresa.ruta) {
             val idEmpresaDelUsuario = usuarioActual?.empresaId ?: 0L
 
-            com.induztek.app.screens.MiEmpresaScreen(
+            MiEmpresaScreen(
                 empresaId = idEmpresaDelUsuario,
-                viewModel = androidx.lifecycle.viewmodel.compose.viewModel(),
+                viewModel = viewModel(),
                 onVolver = { navController.popBackStack() }
             )
         }

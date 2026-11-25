@@ -13,13 +13,13 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -27,7 +27,6 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -46,12 +45,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -91,12 +90,8 @@ fun RegistroPruebaScreen(
 
     val permisoGaleriaLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
-    ) { esConcedido ->
-        if (esConcedido) {
-            galleryLauncher.launch("image/*")
-        } else {
-            galleryLauncher.launch("image/*")
-        }
+    ) { _ ->
+        galleryLauncher.launch("image/*")
     }
 
     // --- 2. CAPTURA DE FOTO (CÁMARA) ---
@@ -121,16 +116,17 @@ fun RegistroPruebaScreen(
 
     // --- 3. GEOLOCALIZACIÓN GPS ---
     val locationPermissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission()
-    ) { isGranted: Boolean ->
-        if (isGranted) {
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { permisos ->
+        val concedido = permisos[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+                permisos[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+        if (concedido) {
             viewModel.obtenerUbicacionGps()
         } else {
             Toast.makeText(context, "Se requiere permiso de ubicación para registrar GPS", Toast.LENGTH_SHORT).show()
         }
     }
 
-    // Funciones Auxiliares para verificar permisos
     fun abrirGaleria() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             galleryLauncher.launch("image/*")
@@ -154,15 +150,20 @@ fun RegistroPruebaScreen(
     }
 
     fun solicitarUbicacion() {
-        val tienePermiso = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
-        if (tienePermiso) {
+        val tieneFine = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+        val tieneCoarse = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+        if (tieneFine || tieneCoarse) {
             viewModel.obtenerUbicacionGps()
         } else {
-            locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+            locationPermissionLauncher.launch(
+                arrayOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                )
+            )
         }
     }
 
-    // Notificación de éxito
     LaunchedEffect(uiState.registroExitoso) {
         if (uiState.registroExitoso) {
             viewModel.limpiarFormulario()
@@ -198,7 +199,7 @@ fun RegistroPruebaScreen(
                 .padding(Dimens.espacioGrande),
             verticalArrangement = Arrangement.spacedBy(Dimens.espacioMedio)
         ) {
-            // Tarjeta 1: Selección del Equipo
+            // Tarjeta 1 seleccion del equipo
             TarjetaSeccion(titulo = "1. Datos del Equipo") {
                 Column(verticalArrangement = Arrangement.spacedBy(Dimens.espacioChico)) {
                     Text("Seleccione Equipo a Probar:", style = MaterialTheme.typography.bodyMedium)
@@ -235,8 +236,8 @@ fun RegistroPruebaScreen(
                 }
             }
 
-            // Tarjeta 2: Mediciones Técnicas
-            TarjetaSeccion(titulo = "2. Mediciones y Resultados") {
+            // Tarjeta 2 mediciones y observaciones
+            TarjetaSeccion(titulo = "2. Mediciones y Observaciones") {
                 Column(verticalArrangement = Arrangement.spacedBy(Dimens.espacioChico)) {
                     OutlinedTextField(
                         value = uiState.tipoPrueba,
@@ -255,8 +256,8 @@ fun RegistroPruebaScreen(
                         value = uiState.valorMedicion,
                         onValueChange = { viewModel.onValorMedicionCambia(it) },
                         label = { Text("Valor Numérico (${uiState.unidadMedida})") },
-                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
-                            keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Decimal
                         ),
                         isError = uiState.errorValorMedicion != null,
                         supportingText = {
@@ -269,28 +270,17 @@ fun RegistroPruebaScreen(
                         modifier = Modifier.fillMaxWidth()
                     )
 
-                    Text("Resultado de la prueba:", style = MaterialTheme.typography.bodyMedium)
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(Dimens.espacioMedio)
-                    ) {
-                        FilterChip(
-                            selected = uiState.resultado == "APROBADO",
-                            onClick = { viewModel.onResultadoCambia("APROBADO") },
-                            label = { Text("APROBADO") }
-                        )
-                        FilterChip(
-                            selected = uiState.resultado == "RECHAZADO",
-                            onClick = { viewModel.onResultadoCambia("RECHAZADO") },
-                            label = { Text("RECHAZADO") }
-                        )
-                    }
-
                     OutlinedTextField(
                         value = uiState.observaciones,
                         onValueChange = { viewModel.onObservacionesCambia(it) },
                         label = { Text("Observaciones / Notas de terreno") },
                         modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Text(
+                        text = "Estado inicial: Pendiente de revisión y aprobación por ingeniero.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -298,8 +288,6 @@ fun RegistroPruebaScreen(
             // Tarjeta 3: Evidencias y APIs Nativas (Cámara + GPS)
             TarjetaSeccion(titulo = "3. Evidencia Nativa (Cámara & GPS)") {
                 Column(verticalArrangement = Arrangement.spacedBy(Dimens.espacioChico)) {
-
-                    // Selector de Evidencia (Cámara / Galería)
                     Button(
                         onClick = { mostrarDialogoFoto = true },
                         modifier = Modifier.fillMaxWidth()
@@ -322,17 +310,21 @@ fun RegistroPruebaScreen(
 
                     HorizontalDivider(modifier = Modifier.padding(vertical = Dimens.espacioChico))
 
-                    // API Nativa 2: Geolocalización GPS
                     OutlinedButton(
                         onClick = { solicitarUbicacion() },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("Capturar Coordenadas GPS")
+                        Text("Capturar GPS")
                     }
 
                     if (uiState.latitud != null && uiState.longitud != null) {
                         Text(
-                            text = "Ubicación GPS registrada:\nLat: ${uiState.latitud} | Lon: ${uiState.longitud}",
+                            text = buildString {
+                                append("Ubicación GPS registrada:\nLat: ${uiState.latitud} | Lon: ${uiState.longitud}")
+                                uiState.direccionGps?.let { dir ->
+                                    append("\nDirección: $dir")
+                                }
+                            },
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.primary
                         )
@@ -340,19 +332,19 @@ fun RegistroPruebaScreen(
                 }
             }
 
-            // Botón Principal de Guardar Protocolo
+            // Botón Principal de Enviar Protocolo
             Button(
                 onClick = { viewModel.onGuardarProtocolo(idUsuarioTecnico) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp)
             ) {
-                Text("REGISTRAR PROTOCOLO EN TERRENO")
+                Text("ENVIAR PROTOCOLO A REVISIÓN")
             }
 
             if (uiState.registroExitoso) {
                 Text(
-                    text = "✓ Protocolo registrado con éxito en estado REGISTRADO_TERRENO",
+                    text = "✓ Protocolo enviado en estado PENDIENTE_APROBACION",
                     color = MaterialTheme.colorScheme.primary,
                     style = MaterialTheme.typography.bodyMedium
                 )
@@ -360,7 +352,6 @@ fun RegistroPruebaScreen(
         }
     }
 
-    // Diálogo emergente para elegir la fuente de evidencia (Cámara o Galería)
     if (mostrarDialogoFoto) {
         AlertDialog(
             onDismissRequest = { mostrarDialogoFoto = false },
@@ -395,7 +386,6 @@ fun RegistroPruebaScreen(
     }
 }
 
-// Convertidor de Bitmap a Uri para previsualización
 private fun guardarBitmapEnUriPrueba(context: Context, bitmap: Bitmap): Uri? {
     val bytes = ByteArrayOutputStream()
     bitmap.compress(Bitmap.CompressFormat.JPEG, 100, bytes)
