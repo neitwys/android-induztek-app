@@ -7,7 +7,7 @@ object RetrofitClient {
     // Recordar cambiar esto con el port de VSC.
     //const val URL_BASE = "http://10.0.2.2:8090/" //
 
-    const val URL_BASE = "https://01dwddcb-8090.brs.devtunnels.ms/"
+    const val URL_BASE = "https://7nkxcdld-8090.brs.devtunnels.ms/"
     private fun crear(urlBase: String): Retrofit =
         Retrofit.Builder()
             .baseUrl(urlBase)

@@ -23,6 +23,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -36,10 +37,12 @@ import com.induztek.app.model.RegistroEmpresaUiState
 import com.induztek.app.ui.components.BotonPrincipal
 import com.induztek.app.ui.components.BotonSecundario
 import com.induztek.app.ui.components.CampoTexto
+import com.induztek.app.ui.components.SelectorDesplegable
 import com.induztek.app.ui.components.TarjetaSeccion
 import com.induztek.app.ui.theme.Dimens
 import com.induztek.app.ui.theme.Exito
 import com.induztek.app.ui.theme.ExitoFondo
+import com.induztek.app.utils.UbicacionesUtils
 import com.induztek.app.viewmodel.RegistroEmpresaViewModel
 
 
@@ -206,22 +209,27 @@ fun RegistroEmpresaContent(
                     icono = R.drawable.ic_ubicacion
                 )
 
-                CampoTexto(
-                    valor = uiState.comuna,
-                    onValorCambia = onComunaCambia,
-                    etiqueta = stringResource(R.string.cliente_campo_comuna),
-                    error = uiState.errorComuna,
-                    tipoTeclado = KeyboardType.Text,
-                    icono = R.drawable.ic_comuna
+                val comunasDisponibles = remember(uiState.region) {
+                    UbicacionesUtils.obtenerComunas(uiState.region)
+                }
+
+                SelectorDesplegable(
+                    label = "Región",
+                    valorSeleccionado = uiState.region,
+                    opciones = UbicacionesUtils.listaRegiones,
+                    onSeleccionar = onRegionCambia,
+                    placeholder = "Seleccione una región",
+                    error = uiState.errorRegion
                 )
 
-                CampoTexto(
-                    valor = uiState.region,
-                    onValorCambia = onRegionCambia,
-                    etiqueta = stringResource(R.string.cliente_campo_region),
-                    error = uiState.errorRegion,
-                    tipoTeclado = KeyboardType.Text,
-                    icono = R.drawable.ic_region
+                SelectorDesplegable(
+                    label = "Comuna",
+                    valorSeleccionado = uiState.comuna,
+                    opciones = comunasDisponibles,
+                    onSeleccionar = onComunaCambia,
+                    habilitado = uiState.region.isNotBlank(),
+                    placeholder = if (uiState.region.isBlank()) "Primero seleccione una región" else "Seleccione una comuna",
+                    error = uiState.errorComuna
                 )
 
                 CampoTexto(

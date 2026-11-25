@@ -66,7 +66,10 @@ class RegistroEmpresaViewModel(
     }
 
     fun onRegionCambia(valor: String) {
-        _uiState.update { it.copy(region = valor, errorRegion = null, registroExitoso = false) }
+        _uiState.update {
+            it.copy(region = valor, comuna = "", errorRegion = null, errorComuna = null, registroExitoso = false
+            )
+        }
     }
 
     fun onObservacionesAccesoCambia(valor: String) {
